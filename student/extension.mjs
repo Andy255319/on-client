@@ -711,7 +711,16 @@ export function createStudentView() {
             const devLabel = d.label || (d.id ? `기기 ${d.id}` : '확인 불가');
             const devId = d.id ? ` (${d.id})` : '';
             const statusText = formatDeviceStatus(d.status);
-            const attention = d.status !== 'compliant' ? ' [주의: 점검 필요]' : '';
+            let attention = '';
+            if (d.status === 'compliant') {
+              attention = '';
+            } else if (d.status === 'noncompliant') {
+              attention = ' [주의: 점검 필요]';
+            } else if (d.status === 'unknown') {
+              attention = ' [주의: 현재 상태 확인 불가]';
+            } else {
+              attention = ' [주의: 현재 상태 확인 불가]';
+            }
             li.textContent = `${devLabel}${devId} · ${statusText}${attention}`;
             ul.appendChild(li);
           }
@@ -764,7 +773,16 @@ export function createStudentView() {
           for (const s of list) {
             const li = document.createElement('li');
             const statusText = formatSessionStatus(s.status);
-            const attention = s.status !== 'active' ? ' [주의: 만료 또는 철회됨]' : '';
+            let attention = '';
+            if (s.status === 'active') {
+              attention = '';
+            } else if (s.status === 'expired' || s.status === 'revoked') {
+              attention = ' [주의: 만료 또는 철회됨]';
+            } else if (s.status === 'unknown') {
+              attention = ' [주의: 현재 상태 확인 불가]';
+            } else {
+              attention = ' [주의: 현재 상태 확인 불가]';
+            }
             li.textContent = `${s.id || '확인 불가'} · ${statusText}${attention}`;
             ul.appendChild(li);
           }
@@ -835,7 +853,7 @@ export function createStudentView() {
 
         const retryNote = document.createElement('p');
         retryNote.className = 'muted';
-        retryNote.textContent = '다시 시도는 위쪽 다시 불러오기 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)';
+        retryNote.textContent = '다시 시도는 제공 화면의 "도움정보 불러오기" 버튼을 직접 누르세요. (자동으로 다시 요청하지 않습니다)';
         diagSection.appendChild(retryNote);
       } else if (diagnostics.status === 'ok') {
         const data = diagnostics.data || {};
