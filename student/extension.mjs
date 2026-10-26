@@ -599,6 +599,129 @@ export function createStudentView() {
       appendText('p', 'muted', `설명 시각: ${formatCheckedAt(checkedAt)}`);
       return root;
     },
-    renderAction() { return '학생 구현 대기: 현재 사건·조치·실제 대상·사람 확인·ACK와 원천 효과·unknown을 구분하세요.'; },
+    renderAction(input) {
+      const root = document.createElement('div');
+      root.className = 'student-action-view';
+      const appendText = (tag, className, text) => {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        node.textContent = text;
+        root.appendChild(node);
+        return node;
+      };
+      const secretPattern = /(?:Bearer\s+\S+|sk-(?:proj-|ant-|svcacct-)?[A-Za-z0-9_-]{8,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:api[_ -]?key|authorization|password|secret|비밀번호|토큰)\s*[:=]\s*\S+)/i;
+      const safeId = (value) => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/.test(value)
+        && !secretPattern.test(value) && !/[\u0000-\u001f\u007f]/.test(value);
+      const safeMessage = (value, fallback) => typeof value === 'string' && value.trim().length > 0 && value.length <= 500
+        && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value) && !secretPattern.test(value)
+        ? value : fallback;
+      const safeTime = (value) => typeof value === 'string' && value.length <= 64 && !secretPattern.test(value)
+        && Number.isFinite(Date.parse(value)) ? formatCheckedAt(value) : '확인 불가';
+      const statusLabels = {
+        idle: '아직 미실행(idle)',
+        loading: '조치 준비 또는 결과 조회 중(loading)',
+        prepared: '준비됨·미실행(prepared)',
+        executing: '서버에 전달 중(executing)',
+        pending: '서버 접수·처리 중(pending)',
+        succeeded: '효과 확인(succeeded)',
+        denied: '거절(denied)',
+        failed: '실패(failed)',
+        unknown: '결과 불명(unknown)',
+        error: '요청 처리 안 됨(error)',
+        expired: '확인 기한 지남(expired)',
+      };
+      const data = input && typeof input === 'object' ? input : {};
+      const status = Object.hasOwn(statusLabels, data.status) ? data.status : 'unknown';
+      appendText(status === 'error' || status === 'failed' || status === 'denied' ? 'p' : 'p',
+        ['error', 'failed', 'denied'].includes(status) ? 'state state-error' : status === 'loading' || status === 'executing' || status === 'pending' ? 'state state-loading' : status === 'idle' ? 'state state-empty' : 'state',
+        statusLabels[status]);
+
+      if (status === 'idle') {
+        appendText('p', 'muted', '조치 제안은 아직 실행되지 않았습니다. 이 표시만으로 조치를 준비하거나 서버에 전달하지 않습니다.');
+      } else if (status === 'loading') {
+        appendText('p', 'muted', '조치 준비 또는 연동 시스템 결과를 조회하고 있습니다. 처리 결과는 아직 확인되지 않았습니다.');
+      } else if (status === 'prepared') {
+        appendText('p', 'muted', '조치가 준비된 상태이며 아직 서버에 전달되거나 실행되지 않았습니다. 실제 대상과 확인 기한을 제공 화면에서 검토하세요.');
+      } else if (status === 'executing') {
+        appendText('p', 'muted', '서버에 조치를 전달 중입니다. 결과는 아직 확인되지 않았으며 처리가 끝났거나 성공했다고 볼 수 없습니다.');
+      } else if (status === 'pending') {
+        appendText('p', 'muted', '서버가 요청을 접수해 처리 중입니다. 접수 응답(ACK)은 효과 확인이 아니며 결과는 아직 확인되지 않았습니다.');
+      } else if (status === 'succeeded') {
+        if (data.observation?.effectApplied === true) {
+          appendText('p', 'muted', '연동 시스템이 관측한 조치 효과를 확인했습니다.');
+          appendText('p', 'muted', `관측 시각: ${safeTime(data.observation.observedAt)}`);
+          appendText('p', 'muted', 'effectApplied: true');
+        } else {
+          appendText('p', 'state state-error', '결과 불명(unknown): 효과 확인 조건을 충족하지 않아 성공으로 표시하지 않습니다. 효과 없음으로도 판단하지 말고 제공 화면에서 결과만 재조회하세요.');
+          if (typeof data.observation?.effectApplied === 'boolean') appendText('p', 'muted', `관측값 effectApplied: ${String(data.observation.effectApplied)} (효과 없음 또는 성공으로 단정하지 않음)`);
+        }
+      } else if (status === 'denied') {
+        appendText('p', 'muted', `연동 시스템이 조치 요청을 거절했습니다. ${safeMessage(data.message, '안전한 거절 사유를 확인할 수 없습니다.')}`);
+      } else if (status === 'failed') {
+        appendText('p', 'muted', `연동 시스템에서 조치 처리가 실패했습니다. ${safeMessage(data.message, '안전한 실패 사유를 확인할 수 없습니다.')}`);
+      } else if (status === 'unknown') {
+        appendText('p', 'state state-error', '효과 없음으로도 성공으로도 판단할 수 없습니다. 제공 화면에서 연동 시스템 결과만 재조회하세요.');
+      } else if (status === 'expired') {
+        appendText('p', 'muted', '사람 확인 기한이 지났습니다. 제공 화면에서 조치를 다시 준비해야 합니다. 이전 확인은 유효한 것으로 간주하지 않습니다.');
+      } else if (status === 'error') {
+        const rawCode = data.error?.code;
+        const code = typeof rawCode === 'string' && /^[A-Z][A-Z0-9_]{1,63}$/.test(rawCode) && !secretPattern.test(rawCode) ? rawCode : '확인 불가';
+        const message = safeMessage(data.error?.message, '안전한 오류 메시지를 확인할 수 없습니다.');
+        appendText('p', 'state state-error', `요청이 처리되지 않았습니다. 오류 코드: ${code} · ${message}`);
+      }
+
+      if (status === 'succeeded' && data.observation?.effectApplied !== true) {
+        // 입력 상태 succeeded와 원천 관측이 맞지 않으므로, 위에서 이미 결과 불명으로 표시했다.
+      }
+      if (status === 'succeeded' && data.observation?.effectApplied === true && data.receipt?.receiptId && safeId(data.receipt.receiptId)) {
+        appendText('p', 'muted', `영수증 ID: ${data.receipt.receiptId}`);
+      }
+      if (status === 'error' && data.error?.code && typeof data.error.code === 'string'
+          && /^[A-Z][A-Z0-9_]{1,63}$/.test(data.error.code) && !secretPattern.test(data.error.code)) {
+        // 오류 코드는 위의 안전한 오류 문장에 이미 포함했다.
+      }
+
+      const rows = [];
+      if (safeId(data.event?.id)) rows.push(['사건 ID', data.event.id]);
+      const evidence = Array.isArray(data.event?.evidence)
+        ? data.event.evidence.map(item => item?.id).filter(safeId)
+        : [];
+      if (evidence.length) rows.push(['근거 ID', evidence.join(', ')]);
+      else if (data.event && Array.isArray(data.event.evidence)) rows.push(['근거 ID', '없음']);
+      if (safeId(data.actionId)) rows.push(['조치 ID', data.actionId]);
+      if (safeId(data.target?.id)) rows.push(['실제 대상 ID', data.target.id]);
+      if (Number.isSafeInteger(data.target?.generation) && data.target.generation > 0) rows.push(['대상 세대(generation)', String(data.target.generation)]);
+      if (safeId(data.receipt?.requestId)) rows.push(['요청 ID', data.receipt.requestId]);
+      if (safeId(data.receipt?.receiptId) && !(status === 'succeeded' && data.observation?.effectApplied === true)) rows.push(['영수증 ID', data.receipt.receiptId]);
+      if (Number.isSafeInteger(data.receipt?.version) && data.receipt.version >= 0) rows.push(['영수증 버전(version)', String(data.receipt.version)]);
+      if (typeof data.confirmationExpiresAt === 'string') rows.push(['확인 기한', safeTime(data.confirmationExpiresAt)]);
+      if (rows.length) {
+        const dl = document.createElement('dl');
+        dl.className = 'kv';
+        for (const [label, value] of rows) {
+          const dt = document.createElement('dt'); dt.textContent = label;
+          const dd = document.createElement('dd'); dd.textContent = value;
+          dl.appendChild(dt); dl.appendChild(dd);
+        }
+        root.appendChild(dl);
+      }
+      if (status === 'prepared' && typeof data.confirmationExpiresAt === 'string') {
+        appendText('p', 'muted', `사람 확인 기한: ${safeTime(data.confirmationExpiresAt)}. 확인 번호는 이 함수에 전달되지 않으며 만들거나 저장하지 않습니다.`);
+      }
+      if (data.event && Array.isArray(data.event.supportedActions) && data.event.supportedActions.length === 0) {
+        appendText('p', 'muted', '현재 기록에는 연동 시스템이 지원하는 조치가 없습니다. 조치 준비 버튼이 제공 화면에 나오지 않는 것이 정상이며, 실제 처리 경로는 열려 있지 않습니다.');
+      }
+      if (status === 'unknown') {
+        appendText('p', 'muted', '결과 재조회는 제공 화면의 「연동 시스템 결과만 재조회」를 직접 사용하세요. 자동 재전송은 하지 않습니다.');
+      }
+      if (status === 'idle' || status === 'prepared' || status === 'expired') {
+        appendText('p', 'muted', '조치 준비·사람 확인·전달·결과 재조회는 제공 화면을 사용하세요. 이 학생 표시는 조치를 실행하지 않습니다.');
+      }
+
+      // 새 호출마다 새 DOM을 반환하므로 이전 입력의 내용과 성공 표식은 이어지지 않는다.
+      if (safeId(data.event?.id)) root.setAttribute('data-student-action-event', data.event.id);
+      if (safeId(data.receipt?.requestId)) root.setAttribute('data-student-action-request', data.receipt.requestId);
+      return root;
+    },
   };
 }
