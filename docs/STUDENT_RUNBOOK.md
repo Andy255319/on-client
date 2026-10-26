@@ -8,8 +8,12 @@
 |---|---|---|
 | 운영체제 | 실행 도구가 Windows PowerShell용 `.ps1` 파일로 제공됩니다. | 실제 PC의 Windows 버전은 확인하지 않았습니다. |
 | Node.js | `package.json`의 `engines.node`는 `24.19.0`입니다. 실행 스크립트는 주 버전 22~24를 허용하고 `24.19.0`을 권장합니다. | 설치된 버전은 확인하지 않았습니다. PowerShell에서 `node --version`으로 확인하세요. |
+| 앱 패키지 버전 | `package.json`의 `version`은 `0.2.11`입니다. | 이 값은 저장소 원문에서 읽은 값이며 실행 검증은 하지 않았습니다. |
+| 서버 응답 버전 필드 | 서버 응답의 `starterVersion`은 `0.1.0`으로 별도 기록됩니다. 이는 앱 패키지 버전이나 제출 커밋을 뜻하지 않습니다. | 실제 화면·도움정보에서 표시되는 방식은 확인하지 않았습니다. |
 | npm 패키지 | `package.json`에 외부 npm 의존성 목록이 없습니다. 이 저장소 파일 목록에는 `package-lock.json`이 없습니다. | 설치 명령이나 의존성 설치를 실행하지 않았습니다. 일반 실행에 `npm install`은 필요하지 않습니다. |
 | 앱 주소 | 기본 주소는 `http://127.0.0.1:5189/`입니다. | 서버를 실행하거나 브라우저에서 열지 않았습니다. |
+
+`package.json`의 앱 패키지 버전 `0.2.11`과 서버 응답 필드 `starterVersion: 0.1.0`은 서로 다른 이름과 용도의 버전 표기입니다. 화면 또는 도움정보에서 `starterVersion`이 보이면 서버가 보고한 시작 틀 메타데이터로 읽고, 앱 패키지 버전은 `package.json`에서 확인합니다. 두 값을 같다고 보거나 어느 하나로 현재 제출 커밋을 추정하지 않습니다.
 
 > `package.json`의 버전 지정과 실행 도구의 허용 범위는 같은 표현이 아닙니다. 수업 기준은 Node.js `24.19.0`이며, 실행 도구는 Node.js 22~24를 허용합니다. 설치된 버전이 실제로 적합한지는 본인 PC에서 확인하세요.
 
@@ -47,7 +51,7 @@ on-client/                         앱 루트 — 아래 명령을 실행할 위
 앱 루트의 PowerShell에서 실행합니다.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\start-alekov.ps1
 ```
 
 실행 도구가 Node.js 버전, 필수 파일과 포트 사용 여부를 확인한 뒤 로컬 Node 서버를 시작합니다. 준비되면 다음과 같은 시작 안내가 표시되어야 합니다.
@@ -64,13 +68,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
 예제 화면만 볼 때는 앱 루트에서 다음을 실행합니다. `-Demo`는 실제 회사 시스템 연결이나 연결 성취가 아닙니다.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1 -Demo
+powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\start-alekov.ps1 -Demo
 ```
 
 기본 포트가 이미 사용 중이면 다른 포트를 지정하고 브라우저 주소에도 같은 포트 번호를 사용합니다.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1 -Port 5190
+powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\start-alekov.ps1 -Port 5190
 ```
 
 주소 예: `http://127.0.0.1:5190/`
@@ -137,9 +141,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1 -Po
 |---|---|---|
 | `Node.js 가 없습니다` | 새 PowerShell에서 `node --version`을 확인합니다. | 수업 기준 Node.js `24.19.0`을 설치한 뒤 새 PowerShell 창에서 다시 확인합니다. |
 | 지원 범위 밖 Node.js 버전 | 실행 도구가 표시한 버전과 Node.js 주 버전을 확인합니다. | Node.js 22~24를 사용하고, `24.19.0`을 권장 기준으로 삼습니다. |
-| `앱 폴더가 아닙니다` 또는 시작 스크립트·파일 없음 | PowerShell의 현재 위치와 `package.json`, `tools\start-alekov.ps1`, `src\server.mjs` 존재를 확인합니다. | 앱 루트(`on-client`)에서 명령을 다시 실행합니다. 다른 폴더를 초기화하거나 파일을 복사해 덮어쓰지 않습니다. |
+| `앱 폴더가 아닙니다` 또는 시작 스크립트·파일 없음 | PowerShell의 현재 위치와 `package.json`, `tools\\start-alekov.ps1`, `src\\server.mjs` 존재를 확인합니다. | 앱 루트(`on-client`)에서 명령을 다시 실행합니다. 다른 폴더를 초기화하거나 파일을 복사해 덮어쓰지 않습니다. |
 | 포트가 이미 사용 중 | 실행 도구가 출력한 포트 번호를 확인합니다. | 다른 프로그램을 종료하지 말고 `-Port 5190`처럼 다른 번호를 지정합니다. 브라우저 주소도 그 포트로 맞춥니다. |
-| 서버가 제한 시간 안에 응답하지 않음 | 같은 PowerShell 창의 전체 오류 메시지를 확인합니다. | 경로·Node.js·포트를 다시 확인합니다. 해결되지 않으면 오류 메시지를 담당자에게 전달합니다. 이것을 AI 연결 실패 또는 성공으로 단정하지 않습니다. |
+| 서버가 제한 시간 안에 응답하지 않음 | 실행 도구가 출력한 포트 번호를 확인합니다. | 경로·Node.js·포트를 다시 확인합니다. 해결되지 않으면 오류 메시지를 담당자에게 전달합니다. 이것을 AI 연결 실패 또는 성공으로 단정하지 않습니다. |
 | 앱이 열리지만 `disconnected`, 권한 준비 중, 확인 불가 또는 연결 오류 | 앱 화면의 상태 코드와 비밀이 없는 도움정보를 확인합니다. | 기본 미연결은 가능한 상태입니다. 운영 계정·앱 권한·게이트 설정이 필요한 오류는 담당자에게 확인합니다. 열쇠·토큰을 채팅·화면·문서에 복사하지 않습니다. |
 | 패키지 조회 `not_configured`, `not_checked`, `partial`, `unverifiable` 또는 오류 | 전체 조회 상태와 패키지별 상태·정확한 버전·출처·시각을 구분해 확인합니다. | 설정 없음·미조회·확인 불가를 취약점 없음으로 보지 않습니다. 대상 경로와 허용 패키지는 담당자가 준비합니다. 조회를 위해 의존성 버전을 임의로 낮추지 않습니다. |
 | 설명 실패 또는 조치 결과 `unknown` | 보안 기록과 화면의 오류·요청 상태를 확인합니다. | 실패나 결과 불명을 성공·효과 없음으로 바꾸지 않습니다. 실제 조치를 시험 삼아 실행하지 말고, 제공 화면의 결과 확인 절차와 담당자 안내를 따릅니다. |
