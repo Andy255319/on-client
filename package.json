@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.mjs",
     "demo": "node src/server.mjs --demo",
-    "check": "node --check student/extension.mjs"
+    "check": "node --check student/extension.mjs",
+    "package-app": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\package-app.ps1"
   },
   "engines": {
     "node": "24.19.0"
