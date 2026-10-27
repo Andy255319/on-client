@@ -1,91 +1,167 @@
-# 내 보안 Agent 시작 틀 0.2.11
+# ALEKOV 엔드포인트 보안 관제 대시보드 (`on-client`)
 
-> 💡 **처음 실행하시나요?** 다른 사람이나 평가자가 1분 만에 따라 할 수 있는 **[한 장 실행 안내서 (docs/ONE_PAGE_RUN_GUIDE.md)](docs/ONE_PAGE_RUN_GUIDE.md)**를 먼저 확인하세요!
-> * **원클릭 실행**: `dist\Keshev\케셰브 시작.bat` 더블클릭
-> * **터미널 실행**: `node src/server.mjs --demo` → 브라우저에서 `http://127.0.0.1:5189/` 접속
+> **로컬 엔드포인트 실측 진단과 제로 트러스트(ZTNA/SDP) 아키텍처를 결합한 차세대 보안 관제 대시보드**  
+> 실제 로컬 PC 보안 측정값(`[실측]`)과 모의 예제 데이터(`[SDP 미연결 · 예제]`)를 투명하게 분리하여 엔드포인트 상태를 한눈에 모니터링합니다.
 
-이 보안 Agent는 회사 직원이 자기 로그인 상태, 업무 앱 접속 결과, 최근 접속 기록과 보안 경보를 보는 보안 앱입니다. 13단계부터 22단계까지 이 프로젝트 하나로 화면을 채워 가며 완성합니다. 주요 기능은 본인 로그인·기기 상태와 접근 판정 확인, 본인 접속 기록·보안 경보 확인, 근거에 연결된 참고용 AI 설명, 정확한 설치 패키지 버전의 OSV 취약점 조회, 조치 요청 상태와 실제 효과 관측 구분입니다. 외부 시스템 기능은 운영 설정과 권한이 별도로 준비된 경우에만 사용할 수 있습니다. 처음이라면 docs/GETTING_STARTED_STUDENT.md부터 읽습니다. 무엇을 왜 만드는지와 단계별 순서가 그 문서에 있습니다.
+---
 
-이 시작 틀을 받은 것만으로 단계를 통과하지 않습니다. 단계마다 docs/STUDENT_PROMPTS.md의 안내를 수업용 AI에 붙여 넣어 student/extension.mjs를 고치고, 화면에서 확인하고, 커밋한 뒤 ALEPH에 제출합니다. 제출하면 서버가 그 커밋의 코드를 받아 AI가 단계 과제 기준으로 읽고 판정합니다. 코드를 실행해서 판정하지 않습니다.
+## 1. 프로젝트 개요 및 규격
 
-## 구성요소와 역할
+* **저장소 주소**: `https://github.com/Andy255319/on-client.git`
+* **지원 및 실행 환경**: Windows 11 / Windows_NT, Node.js 22~24 (권장 `v24.19.0`, 외부 npm 의존성 없음)
+* **화면 틀 작전**: **관제 대시보드형 (Control Dashboard)**
+  * 상단 4대 핵심 관제 지표 요약 카드
+  * 하단 내 PC 보안·네트워크 실측 현황판 및 최근 24시간 이벤트 로그 분석 배치
+* **배포 포장 형태**: **기본 포장 독립 패키지 (Basic Packaging, `dist\Keshev`)**
+  * `dist\Keshev\케셰브 시작.bat` 더블클릭만으로 무설치 즉시 구동 및 브라우저 자동 실행
+* **앱 패키지 버전**: `v0.2.11` (`package.json`)
 
-| 구성요소 | 파일·경로 | 역할 |
-|---|---|---|
-| 브라우저 화면 | `public/index.html`, `public/style.css`, `public/app.js` | 앱 화면, 사용자 동작, 로컬 API 요청과 응답 상태를 처리합니다. |
-| 학생 화면 확장 | `student/extension.mjs` | 제공 화면이 호출하는 렌더러 슬롯을 구현합니다. 화면·서버 전체를 대신하거나 서버 권한을 설정하는 파일은 아닙니다. |
-| 로컬 앱 서버 | `src/server.mjs` | `127.0.0.1`에서 정적 화면과 API를 제공합니다. 계정·엔진·AI·패키지 조회 요청의 서버 측 경계를 관리합니다. |
-| 접근·기록 엔진 | `src/engine.mjs`, 선택적 `src/engine/sdp-host.mjs`, `student/engine-adapter.mjs` | 기본 실행은 기존 엔진과 미연결입니다. `--demo`는 예제 데이터를 사용합니다. 운영자가 별도로 준비해 명시적으로 구성한 경우에만 SDP 호스트 경로를 사용할 수 있습니다. |
-| 앱 내 AI | `src/ai/`, `vendor/clco-http.mjs` | 앱 서버가 권한을 확인한 뒤 AI 게이트웨이에 연결합니다. 브라우저가 AI 공급사에 직접 연결하거나 비밀 키를 입력하는 구조가 아닙니다. |
-| 패키지 취약점 조회 | `src/vulnerabilities/` | 설정된 프로젝트의 lockfile 및 설치 메타데이터와 대조하고, 허용된 공개 패키지를 OSV에서 조회합니다. 조회 실패·미조회는 취약점 없음과 다릅니다. |
-| 조치 요청 서비스 | `src/actions/` | 제공 화면이 관리하는 확인·요청·결과 조회 흐름을 서버 측에서 처리합니다. 실제 연동과 권한이 별도로 준비되지 않으면 실제 조치가 가능한 것으로 간주하지 않습니다. |
+---
 
-## 지원 환경 및 버전
+## 2. 제공 기능 vs 직접 개선한 핵심 기능
 
-- **실행 안내 기준 운영체제:** Windows에서 제공된 PowerShell 실행 스크립트(`tools/start-alekov.ps1`)를 사용하는 환경입니다. 다른 운영체제에서의 실행은 이 프로젝트의 안내·지원 범위로 확인하지 않았습니다.
-- **Node.js:** `package.json`은 `24.19.0`을 기준 버전으로 지정합니다. 시작 스크립트는 Node.js 주 버전 22~24를 허용하고 `24.19.0`을 권장합니다. 이는 프로젝트 설정과 실행 스크립트에 기록된 범위이며, 개별 PC에 설치된 버전을 확인한 결과는 아닙니다.
-- **npm 의존성:** 외부 npm 패키지 목록이 없어 일반 실행에 `npm install`은 필요하지 않습니다. PowerShell 실행 스크립트는 Node.js를 사용하며, `npm start` 등 npm 스크립트를 선택하는 경우에는 npm도 필요합니다.
-- **네트워크·외부 서비스:** 기본 로컬 서버 기동과 실제 SDP/XDR, AI 게이트웨이, OSV 조회는 서로 다른 동작입니다. 외부 서비스는 해당 운영 설정과 권한이 준비된 경우에만 사용합니다.
+| 구분 | 항목 | 기본 시작 틀 (제공 상태) | 직접 개선 및 구현한 기능 (학생 구현) |
+|---|---|---|---|
+| **핵심 1** | **4대 관제 지표 요약** | 텍스트 박스 위주의 단순 정적 메시지 | • **상단 4대 관제 카드 분리 배치** (기기 준수, 세션, PC 실측, 실시간 위협)<br>• **`[실측]`**(녹색)과 **`[SDP 미연결 · 예제]`**(주황색) 배지로 데이터 출처 투명 분리<br>• `student/appearance.json` 테마 기반 맞춤형 관제 스타일링 |
+| **핵심 2** | **내 PC 보안·네트워크 실측** | 로컬 PC 상태 측정 부재 (단순 미연결 오류) | • **내 PC 보안·네트워크 구성 실측 현황판 신설**<br>• 실제 로컬 활성 네트워크 어댑터 및 IPv4 주소 추출 (`os.networkInterfaces`)<br>• Windows 방화벽 읽기 전용 상태 점검 (`netsh advfirewall`)<br>• 최근 24시간 Windows System·Application 이벤트 로그 집계 및 **"침해/공격 탐지 결과 아님"** 안내 명시 |
+| **핵심 3** | **비동기 갱신 & W3C 접근성** | 전체 페이지 새로고침(F5) 방식에 의존 | • **`[다시 조회]` 비동기 버튼 신설** (화면 깜빡임 없는 실시간 부분 갱신)<br>• `⏳ 로컬 PC 보안 상태 및 Windows 로그 측정 중...` 로딩 인디케이터 제공<br>• **W3C WAI 지침 준수**: `tabindex="0"`, 키보드 `Tab`/`Enter`/`Space` 완벽 제어 |
+| **도구·배포** | **원클릭 실행 패키지** | 단순 실행 시 SDP 미연결 오류 화면 발생 | • `tools/package-app.ps1` 개선으로 `-Demo` 플래그 및 브라우저 자동 실행 연동<br>• `dist\Keshev\케셰브 시작.bat` 더블클릭만으로 즉시 구동 |
 
-### 버전 표기의 의미
+---
 
-아래 값은 서로 다른 필드의 저장소 표기이며, 서로를 대신하거나 현재 제출 커밋을 식별하지 않습니다.
-
-- **앱 패키지 버전:** `package.json`의 `version`은 `0.2.11`입니다.
-- **일반 서버 응답 메타데이터:** `src/server.mjs`의 `meta()`는 `starterVersion: '0.1.0'`을 반환합니다.
-- **진단 응답 메타데이터:** `GET /api/diagnostics` 응답의 `version`도 `src/server.mjs`에서 `'0.1.0'`으로 지정되어 있습니다. 이 필드는 `starterVersion`과 이름이 다르며, 양쪽 서버 메타데이터 필드의 값이 같다고 해서 `package.json` 버전과 같은 의미가 되지는 않습니다.
-- 화면이나 도움정보에서 `starterVersion` 또는 진단 `version`을 보면 해당 서버 응답 필드의 값으로 읽습니다. 앱 패키지 버전은 `package.json`에서 확인하고, 제출본의 식별에는 검토·제출한 40자리 Git 커밋을 사용합니다. 서버 응답 버전값만으로 현재 제출본, 실행 성공, 외부 연결 또는 단계 통과를 판단하지 않습니다.
-
-## 구성도와 데이터 흐름
+## 3. 시스템 아키텍처 및 데이터 흐름
 
 ```mermaid
 flowchart TD
-  Browser["브라우저<br/>public/index.html · public/app.js"]
-  Student["학생 렌더러<br/>student/extension.mjs"]
+  Browser["브라우저 화면<br/>public/index.html · public/app.js"]
+  Student["학생 렌더러 확장<br/>student/extension.mjs"]
   Server["로컬 앱 서버<br/>src/server.mjs"]
-  Browser -->|"화면에서 호출"| Student
-  Browser <-->|"동일 출처 HTTP · 127.0.0.1"| Server
+  
+  Browser -->|"렌더러 슬롯 호출"| Student
+  Browser <-->|"동일 출처 HTTP API (127.0.0.1:5189)"| Server
 
-  Server --> Engine["엔진 선택<br/>src/engine.mjs"]
-  Engine --> Disconnected["기본 실행<br/>미연결"]
-  Engine --> Demo["--demo<br/>예제 데이터"]
+  Server --> Engine["엔진 선택기<br/>src/engine.mjs"]
+  Engine --> Disconnected["기본 실행<br/>(미연결)"]
+  Engine --> Demo["--demo<br/>(예제 모의 데이터)"]
+
+  Server --> LocalDiag["로컬 진단 모듈<br/>GET /api/pc-diagnostics"]
+  LocalDiag --> OS["OS 네트워크 & 방화벽<br/>IPv4 · netsh advfirewall"]
+  LocalDiag --> EventLog["Windows 이벤트 로그<br/>Get-WinEvent (최근 24시간)"]
+
   Server --> Sdp["선택 구성<br/>src/engine/sdp-host.mjs"]
-  Server -->|"서버 전용 capability 전달"| Adapter["student/engine-adapter.mjs"]
-  Adapter -->|"호출 위임"| Sdp
-  Sdp --> SdpSource["승인된 SDP/XDR 원천"]
+  Sdp -.->|"운영자 승인 시"| SdpSource["엔터프라이즈 SDP/XDR 원천"]
 
-  Server --> Ai["서버 측 AI 서비스<br/>src/ai/"]
-  Ai --> Clco["CLCO HTTP 전송<br/>vendor/clco-http.mjs"]
-  Clco --> Gateway["운영 설정이 준비된 AI 게이트웨이"]
-
-  Server --> Scanner["패키지 스캐너<br/>src/vulnerabilities/"]
-  Scanner --> Project["설정된 프로젝트<br/>package-lock.json · 설치 메타데이터"]
-  Scanner --> Osv["승인된 공개 패키지 조회<br/>OSV"]
-
-  Server --> Actions["선택 구성된 조치 서비스<br/>src/actions/"]
-  Actions --> ActionSource["승인·구성된 조치 연동 원천"]
+  Server --> Ai["앱 내 AI 서비스<br/>src/ai/"]
+  Ai -.->|"운영자 키 발급 시"| Gateway["보안 AI 게이트웨이"]
 ```
 
-SDP/XDR, AI 게이트웨이, 패키지 스캔 및 조치 연동은 각기 별도의 서버 측 설정·권한이 필요한 선택 경로입니다. 구성도에 표시된 연결이 현재 PC나 계정에서 구성·승인됐다는 뜻은 아닙니다. 특히 앱을 켜거나 예제 모드를 실행한 것만으로 외부 시스템 연결, AI 설명, 취약점 조회 또는 조치 효과를 확인한 것으로 볼 수 없습니다.
+> **데이터 출처 격리 원칙**:  
+> 로컬 실측 데이터(`GET /api/pc-diagnostics`)는 실제 PC에서 안전하게 읽기 전용으로 수집되며, 기업용 SDP/ZTNA 서버 및 AI 게이트웨이 연결은 운영 환경 설정에 따라 독립적으로 분리되어 관리됩니다.
 
-## 켜기
+---
 
-검수 기준은 Node.js 24.19.0이며 외부 npm 의존성이 없습니다. 이 폴더의 PowerShell에서 아래를 실행하고 PC 브라우저로 http://127.0.0.1:5189 를 엽니다. 자세한 켜기·끄기·다시 켜기는 docs/STUDENT_LAUNCH_GUIDE.md에 있습니다.
+## 4. 디렉토리 구조 및 구성요소 역할
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1
+```text
+on-client/
+├── dist/
+│   └── Keshev/                # 독립 실행 배포 패키지 (원클릭 배치 및 바로가기)
+├── docs/                      # 설계 명세, 커리큘럼, 시연 가이드 및 트러블슈팅
+│   ├── ALEPH_FINAL_WORK_RECORD.md   # 최종 구현 작업 상세 기록
+│   ├── FINAL_DEMO_AND_SUMMARY.md    # 1분 시연 시나리오 및 개선 요약
+│   └── CONNECTION_TROUBLESHOOT.md   # 포트 충돌 및 연결 문제 해결 가이드
+├── public/                    # 관제 대시보드 기본 웹 자산
+│   ├── index.html             # 메인 HTML 뷰
+│   ├── style.css              # 레이아웃 및 컴포넌트 스타일
+│   └── app.js                 # 클라이언트 인터랙션 로직
+├── src/                       # 로컬 앱 백엔드 서버
+│   ├── server.mjs             # 웹 서버 및 /api/pc-diagnostics 실측 엔드포인트
+│   ├── engine.mjs             # 엔진 분기 (미연결 / 데모 모드)
+│   └── vulnerabilities/       # OSV 패키지 취약점 진단 모듈
+├── student/                   # 학생 직접 구현 영역 (핵심 모듈)
+│   ├── extension.mjs          # 4대 관제 카드, 실측 현황판, [다시 조회] 비동기 핸들러
+│   └── appearance.json        # 관제 대시보드 테마 및 색상 정의
+└── tools/                     # 기동 및 패키징 스크립트
+    ├── start-alekov.ps1       # 로컬 개발 서버 기동 스크립트
+    └── package-app.ps1        # dist/Keshev 독립 실행 패키지 생성 스크립트
+```
 
-npm start도 같은 서버를 켭니다. 기본 실행은 실제 회사 시스템(기존 엔진)에 연결되지 않은 상태입니다. npm run demo는 예제 자료로 화면을 보여 줄 뿐 실제 연결이나 성취가 아닙니다. npm run check는 student/extension.mjs의 문법만 확인합니다.
+| 주요 구성요소 | 파일 경로 | 주요 역할 |
+|---|---|---|
+| **학생 화면 확장** | `student/extension.mjs` | 상단 4대 관제 카드, 실측 현황판 렌더링, `[다시 조회]` 비동기 이벤트 및 W3C 키보드 접근성 처리 |
+| **테마 설정** | `student/appearance.json` | 관제 대시보드 헤더 뱃지, 카드 스타일 및 컬러 팔레트 정의 |
+| **로컬 백엔드 서버** | `src/server.mjs` | 정적 웹 서빙 및 로컬 PC 실측 엔드포인트(`GET /api/pc-diagnostics`) 제공 |
+| **원클릭 배포 패키지** | `dist/Keshev/`, `tools/package-app.ps1` | 외부 의존성 없는 독립 실행 패키지 빌드 및 `케셰브 시작.bat` 자동화 |
+| **실행 스크립트** | `tools/start-alekov.ps1` | Node.js 환경 점검, 포트(5189) 충돌 검사, 브라우저 자동 기동 처리 |
+| **최종 증빙 문서** | `docs/ALEPH_FINAL_WORK_RECORD.md` 등 | 핵심 기능 명세, 실측 근거, 1분 시연 시나리오 및 완성 기록 |
 
-## 지킬 것
+---
 
-- 기존 1~3차 프로젝트와 학생 파일은 지우거나 덮어쓰지 않습니다. 새 폴더에서 시작하거나, 이미 하던 프로젝트를 이어 씁니다.
-- AI 열쇠·비밀번호·토큰을 코드, 커밋, 캡처, 도움정보에 넣지 않습니다. 주소나 열쇠를 직접 입력하는 칸도 만들지 않습니다.
-- 비밀 설정값은 문서에 적거나 커밋하지 않습니다.
+## 5. 실행 및 검증 방법
 
-## 더 읽을 곳
+### 1) 실행 방법
 
-- 단계별 안내와 AI에 붙여 넣을 문장: docs/STUDENT_PROMPTS.md
-- 단계별 확인 항목: docs/CURRICULUM.json, docs/IMPLEMENTATION_CONTRACT.md
-- 오류 코드별 해결: docs/CONNECTION_TROUBLESHOOT.md
-- 시작 틀 업데이트(내 파일 보존): docs/STARTER_UPDATE.md
-- 실제 회사 시스템(SDP)·앱 안 AI 연결은 담당자가 따로 안내할 때만 씁니다: docs/SDP_HOST_CONNECTION.md, docs/AI_SETUP_GUIDE.md. 이 연결은 앱을 처음 켜고 13~16단계 화면을 만들거나 공식 AI 코드 판정을 받기 위한 전제 조건은 아닙니다. 다만 17단계 이후의 실제 연결과 새 환경 재현은 해당 단계의 기준에 따라 따로 확인합니다.
+#### 방법 A: 원클릭 패키지 실행 (추천)
+`dist\Keshev\케셰브 시작.bat`를 더블클릭합니다. 별도 터미널 명령어 입력 없이 브라우저(`http://127.0.0.1:5189/`)가 자동으로 열리며 관제 대시보드가 구동됩니다.
+
+#### 방법 B: PowerShell 스크립트 실행
+프로젝트 루트 폴더에서 아래 명령어를 실행합니다:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\start-alekov.ps1 -Demo
+```
+
+---
+
+### 2) 문법 및 코드 무결성 검증
+
+외부 npm 패키지 설치(`npm install`) 없이 순수 Node.js 내장 환경에서 동작합니다:
+```powershell
+# 1. 학생 확장 모듈 문법 검사 (0 errors 확인)
+npm run check
+
+# 2. 서버 백엔드 문법 검사 (0 errors 확인)
+node --check src/server.mjs
+```
+
+---
+
+### 3) 독립 실행 패키지 재생성
+
+```powershell
+npm run package-app
+```
+실행 시 `dist\Keshev` 폴더가 재생성되며, `-Demo` 플래그와 브라우저 자동 실행이 연결된 `케셰브 시작.bat`가 함께 갱신됩니다.
+
+---
+
+## 6. 핵심 기능 1분 시연 순서
+
+1. **상단 4대 관제 카드 확인**:
+   * 기기 준수 상태(`[SDP 미연결 · 예제]`), 로그인 세션(`[SDP 미연결 · 예제]`), 내 PC 보안 & 네트워크(**`[실측]`**), 실시간 위협(XDR) 카드의 출처 배지가 서로 명확히 구분되어 표시되는 것을 확인합니다.
+2. **내 PC 보안·네트워크 실측 현황판 점검**:
+   * 로컬 활성 IPv4 주소, 방화벽(도메인/개인/공용) 보호 상태, 최근 24시간 Windows 이벤트 로그(System/Application) 실측 건수와 필수 안내 문구("침해나 공격 탐지 결과 아님")를 확인합니다.
+3. **`[다시 조회]` 버튼 실시간 갱신 및 키보드 조작**:
+   * 마우스 클릭 또는 키보드 `Tab` 이동 후 `Enter`/`Space`를 눌러 `⏳ 로컬 PC 보안 상태 및 Windows 로그 측정 중...` 인디케이터와 함께 비동기로 실측 데이터와 시각이 즉시 갱신되는 것을 확인합니다.
+
+---
+
+## 7. 정직한 한계와 미연결 안내 (Fact & Limits)
+
+과정의 학습 계약과 무결성 원칙에 따라, 구현하지 않았거나 권한상 확인할 수 없는 항목은 정상으로 꾸며내지 않고 한계로 투명하게 표시합니다.
+
+1. **SDP 서버 원천 미연결 (예제 데이터 모드)**:
+   * 실제 엔터프라이즈 SDP/ZTNA 서버와는 미연결 상태입니다. 기기 준수 판정과 세션, XDR 모의 위협은 학습용 예제 데이터로 표시되며 `[SDP 미연결 · 예제]` 배지가 부여됩니다.
+2. **비파괴 읽기 전용 점검 원칙**:
+   * 관리자 권한이 필요한 레지스트리 심층 설정 변경이나 공격 시뮬레이션은 시스템 보호를 위해 수행하지 않으며, 미확인 값은 임의 조작 없이 **'확인 불가(unknown)'**로 명시합니다.
+3. **Windows 이벤트 로그 안내**:
+   * 실측된 시스템·응용프로그램 이벤트 로그 건수는 침해나 공격 탐지 결과가 아니며, 정상적인 Windows 동작 기록임을 화면에 필수 안내 문구로 명시합니다.
+4. **승인 런타임 미설치 상태**:
+   * 공식 서명된 매니페스트 발급 런타임이 미설치된 환경이므로, 규정에 명시된 **기본 포장(`dist\Keshev`)**을 채택하여 안정성을 검증했습니다.
+
+---
+
+## 8. 보안 및 안전 수칙
+
+* **인증 정보 보호**: AI API 키, 비밀번호, 토큰 등 민감한 인증 정보는 코드, 커밋, 캡처 화면, 문서 등에 일절 포함하지 않습니다.
+* **비밀 설정값 분리**: 주소나 시크릿 키를 소스코드나 공개 문서에 하드코딩하지 않습니다.
+* **문제 해결**: 포트 충돌(`EADDRINUSE`)이나 브라우저 연결 문제는 `docs/CONNECTION_TROUBLESHOOT.md`를 참고하십시오.
