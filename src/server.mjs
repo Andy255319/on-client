@@ -1,4 +1,5 @@
 import http from 'node:http';
+import os from 'node:os';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
@@ -681,11 +682,25 @@ export function createOnServer(serverOptions={}) {
         send(200,{ok:true,data:guide});return;
         }finally{closeNativeHostOperation(nativeOperation);}
       }
-      if(req.method==='GET'&&url.pathname==='/api/diagnostics'){
-        // 자동 호출이나 비밀 원문·전체 설정 출력 없이 로컬 연결 상태만 진단한다.
+      if(req.method==='GET'&&(url.pathname==='/api/diagnostics'||url.pathname==='/api/system-status')){
+        // 일반 권한으로 읽을 수 있는 로컬 PC 메모리·가동시간 상태를 측정한다.
+        const totalMem=os.totalmem();
+        const freeMem=os.freemem();
+        const usedMem=totalMem-freeMem;
+        const memoryUsagePercent=Number(((usedMem/totalMem)*100).toFixed(1));
+        const system={
+          kind:'real',
+          totalMemoryBytes:totalMem,
+          freeMemoryBytes:freeMem,
+          usedMemoryBytes:usedMem,
+          memoryUsagePercent,
+          uptimeSeconds:Math.floor(os.uptime()),
+          measuredAt:clock().toISOString(),
+          source:'node:os (일반 사용자 권한)'
+        };
         const info=(mappedAi??defaultAi).connectionInfo();
         send(200,{ok:true,data:{requestId,component:'on-client',version:'0.1.0',engine:{mode,code:mode==='disconnected'?'ENGINE_NOT_CONNECTED':mode==='demo'?'DEMO_ONLY':'ADAPTER_CONFIGURED'},
-          ai:{configured:info?.configured===true,authorized:false,authorizationRequired:true},checkedAt:clock().toISOString(),workbenchRequiredAtRuntime:false}});return;
+          ai:{configured:info?.configured===true,authorized:false,authorizationRequired:true},system,checkedAt:clock().toISOString(),workbenchRequiredAtRuntime:false}});return;
       }
       if(req.method==='GET'&&url.pathname==='/api/vulnerabilities'){
         const data=await bounded(signal=>scanner.scan({signal}));send(200,{ok:true,data});

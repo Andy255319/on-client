@@ -1,4 +1,4 @@
-<#
+﻿<#
   케셰브 기본 폴더 패키지 생성기
   - 앱을 dist\Keshev 에 복사하고 그 안에 Windows 바로가기를 만듭니다.
   - 기존 프로젝트 폴더, Git 기록, 로컬 설정·비밀 파일은 복사하거나 변경하지 않습니다.
@@ -69,11 +69,16 @@ try {
   $shortcut.Description = '케셰브 로컬 앱 서버 시작'
   $shortcut.Save()
 
+  $batPath = Join-Path $packageRoot '케셰브 시작.bat'
+  $batContent = "@echo off`r`nchcp 65001 >nul`r`necho [케셰브 앱 시작 중...]`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0tools\start-alekov.ps1`"`r`npause"
+  [System.IO.File]::WriteAllText($batPath, $batContent, (New-Object System.Text.UTF8Encoding $false))
+
   $completed = $true
   Write-Host '기본 패키지를 만들었습니다.'
   Write-Host "패키지 폴더: $packageRoot"
   Write-Host "포함 파일 수: $copied"
   Write-Host "바로가기: $shortcutPath"
+  Write-Host "원클릭 실행 배치: $batPath"
   Write-Host '바로가기는 로컬 앱 서버를 시작합니다. 외부 계정·AI·SDP/XDR 연결 성공을 뜻하지 않습니다.'
 } finally {
   if (-not $completed -and (Test-Path -LiteralPath $packageRoot)) {

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>케셰브 관제 대시보드</title>
+  <link rel="stylesheet" href="/dashboard.css">
+  <script type="module" src="/dashboard.js"></script>
+</head>
+<body>
+  <main class="dashboard">
+    <header class="dashboard-header">
+      <div>
+        <p class="eyebrow">케셰브 · 로컬 보안 앱</p>
+        <h1>관제 대시보드</h1>
+        <p class="lede">현재 앱 API가 반환한 계정·기기·보안 기록의 요약입니다. 외부 연결의 성공을 대신 확인하지 않습니다.</p>
+      </div>
+      <div class="header-actions">
+        <a class="button button-secondary" href="/" aria-label="기본 앱 화면으로 이동">기본 앱 열기</a>
+        <button class="button button-primary" id="refresh-dashboard" type="button">다시 불러오기</button>
+      </div>
+    </header>
+
+    <p class="notice" id="dashboard-notice" role="status">API 응답을 불러오는 중입니다.</p>
+
+    <section class="status-grid" aria-label="현재 상태 카드 네 개">
+      <article class="status-card" id="card-api" aria-labelledby="title-api">
+        <p class="card-kicker">서비스</p>
+        <h2 id="title-api">로컬 API 응답</h2>
+        <p class="card-value" id="value-api">확인 중</p>
+        <p class="card-detail" id="detail-api">현재 세션에서 요청한 API 결과를 기다리는 중입니다.</p>
+        <p class="card-source" id="source-api">원천: 로컬 앱 서버</p>
+      </article>
+      <article class="status-card" id="card-identity" aria-labelledby="title-identity">
+        <p class="card-kicker">계정</p>
+        <h2 id="title-identity">로그인·세션</h2>
+        <p class="card-value" id="value-identity">확인 중</p>
+        <p class="card-detail" id="detail-identity">계정 API 응답을 기다리는 중입니다.</p>
+        <p class="card-source" id="source-identity">원천: 로그인 정보 API</p>
+      </article>
+      <article class="status-card" id="card-devices" aria-labelledby="title-devices">
+        <p class="card-kicker">기기</p>
+        <h2 id="title-devices">응답 기기 현황</h2>
+        <p class="card-value" id="value-devices">확인 중</p>
+        <p class="card-detail" id="detail-devices">기기 API 응답을 기다리는 중입니다.</p>
+        <p class="card-source" id="source-devices">원천: 기기 API</p>
+      </article>
+      <article class="status-card" id="card-events" aria-labelledby="title-events">
+        <p class="card-kicker">보안 기록</p>
+        <h2 id="title-events">불러온 기록</h2>
+        <p class="card-value" id="value-events">확인 중</p>
+        <p class="card-detail" id="detail-events">보안 기록 API 응답을 기다리는 중입니다.</p>
+        <p class="card-source" id="source-events">원천: 보안 기록 API</p>
+      </article>
+    </section>
+
+    <section class="lower-grid" aria-label="보안 기록 요약">
+      <article class="panel" aria-labelledby="trend-heading">
+        <div class="panel-heading">
+          <div>
+            <p class="card-kicker">추이</p>
+            <h2 id="trend-heading">불러온 기록의 날짜별 분포</h2>
+          </div>
+          <span class="scope-label">최대 7개 날짜</span>
+        </div>
+        <p class="panel-description">현재 응답에 포함된 기록만 집계합니다. 전체 기간의 추이나 원천 데이터 완전성을 보장하지 않습니다.</p>
+        <div id="trend-chart" class="trend-chart" role="img" aria-label="불러온 기록의 날짜별 분포"></div>
+        <p id="trend-empty" class="empty-state" hidden>분포를 표시할 보안 기록이 없습니다.</p>
+      </article>
+
+      <article class="panel records-panel" aria-labelledby="records-heading">
+        <div class="panel-heading">
+          <div>
+            <p class="card-kicker">기록</p>
+            <h2 id="records-heading">최근 불러온 기록</h2>
+          </div>
+          <span class="scope-label">최대 10건 표시</span>
+        </div>
+        <p class="panel-description">기록은 참고용 요약입니다. 색상만으로 상태를 구분하지 않습니다.</p>
+        <div class="table-wrap">
+          <table>
+            <caption class="visually-hidden">현재 API 응답의 보안 기록</caption>
+            <thead>
+              <tr><th scope="col">시각</th><th scope="col">종류·상태</th><th scope="col">기록 요약</th></tr>
+            </thead>
+            <tbody id="records-body"><tr><td colspan="3">불러오는 중입니다.</td></tr></tbody>
+          </table>
+        </div>
+        <p id="records-source" class="card-source">원천: 보안 기록 API</p>
+      </article>
+    </section>
+
+    <footer class="dashboard-footer">
+      <p><strong>자료 구분:</strong> 실제 연동 응답은 서버가 반환한 값으로 표시합니다. 예제 모드에는 <strong>예제 자료(demo) · 실제 조회 결과 아님</strong>을 표시합니다. 이 대시보드는 설명용 임의 수치를 만들지 않습니다.</p>
+      <p>AI 모델 점검·OSV 조회·보안 조치 요청은 이 페이지에서 실행하지 않습니다. 기본 앱 화면에서 제공되는 기능을 각각 확인하세요.</p>
+      <p id="updated-at">마지막 조회: 아직 없음</p>
+    </footer>
+  </main>
+</body>
+</html>

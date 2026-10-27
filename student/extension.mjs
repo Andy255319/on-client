@@ -104,38 +104,135 @@ export function createStudentView() {
           root.appendChild(modeBadge);
         }
       }
+
       if (!me || me.status === 'loading') {
         const loading = document.createElement('p');
         loading.className = 'state state-loading';
         loading.textContent = '불러오는 중';
         root.appendChild(loading);
+        return root;
       } else if (me.status === 'error') {
         const error = document.createElement('p');
         error.className = 'state state-error';
         const msg = me.error?.message || '서버에 연결하지 못했습니다.';
         error.textContent = '연결 실패: ' + msg;
         root.appendChild(error);
-      } else if (me.status === 'ok') {
-        const dl = document.createElement('dl');
-        dl.className = 'identity';
-        const userDt = document.createElement('dt'); userDt.textContent = '사용자';
-        const userDd = document.createElement('dd');
-        const user = me.data?.user;
-        userDd.textContent = (user && (user.label || user.id)) || '확인 불가';
-        dl.appendChild(userDt); dl.appendChild(userDd);
-        const deviceDt = document.createElement('dt'); deviceDt.textContent = '기기';
-        const deviceDd = document.createElement('dd');
-        const device = me.data?.device;
-        const deviceName = (device && (device.label || device.id)) || '확인 불가';
-        deviceDd.textContent = `${deviceName} · ${formatDeviceStatus(device?.status)}`;
-        dl.appendChild(deviceDt); dl.appendChild(deviceDd);
-        const sessionDt = document.createElement('dt'); sessionDt.textContent = '세션';
-        const sessionDd = document.createElement('dd');
-        const session = me.data?.session;
-        sessionDd.textContent = `${(session && session.id) || '확인 불가'} · ${formatSessionStatus(session?.status)}`;
-        dl.appendChild(sessionDt); dl.appendChild(sessionDd);
-        root.appendChild(dl);
+        return root;
       }
+
+      const device = me.data?.device;
+      const deviceName = (device && (device.label || device.id)) || '확인 불가';
+      const session = me.data?.session;
+      const sessionId = (session && session.id) || '확인 불가';
+      const user = me.data?.user;
+      const userName = (user && (user.label || user.id)) || '확인 불가';
+
+      // --- 관제 대시보드형: 상단 4대 관제 요약 카드 그리드 ---
+      const dashboardSection = document.createElement('section');
+      dashboardSection.className = 'dashboard-control-cards';
+      dashboardSection.setAttribute('aria-label', '관제 대시보드 요약 지표');
+
+      const cardGrid = document.createElement('div');
+      cardGrid.className = 'grid-4-cards';
+
+      // 1. 기기 준수 상태 카드 (예시 데이터)
+      const c1 = document.createElement('div');
+      c1.className = 'card metric-card';
+      c1.innerHTML = `
+        <div class="metric-header">
+          <span class="metric-title">기기 준수 상태</span>
+          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+        </div>
+        <div class="metric-value ${device?.status === 'compliant' ? 'val-good' : 'val-warn'}">${formatDeviceStatus(device?.status)}</div>
+        <div class="metric-sub">${deviceName}</div>
+      `;
+      cardGrid.appendChild(c1);
+
+      // 2. 로그인 세션 상태 카드 (예시 데이터)
+      const c2 = document.createElement('div');
+      c2.className = 'card metric-card';
+      c2.innerHTML = `
+        <div class="metric-header">
+          <span class="metric-title">로그인 세션</span>
+          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+        </div>
+        <div class="metric-value ${session?.status === 'active' ? 'val-good' : 'val-warn'}">${formatSessionStatus(session?.status)}</div>
+        <div class="metric-sub">사용자: ${userName} (${sessionId})</div>
+      `;
+      cardGrid.appendChild(c2);
+
+      // 3. 내 PC 상태 (실제 메모리/시스템 실측값 카드)
+      const c3 = document.createElement('div');
+      c3.className = 'card metric-card metric-real';
+      c3.innerHTML = `
+        <div class="metric-header">
+          <span class="metric-title">내 PC 리소스 (메모리)</span>
+          <span class="tag tag-real" title="로컬 PC 일반 권한 실측값">[실측]</span>
+        </div>
+        <div class="metric-value val-real" id="student-real-memory">측정 중…</div>
+        <div class="metric-sub" id="student-real-memory-sub">시각: 확인 중</div>
+      `;
+      cardGrid.appendChild(c3);
+
+      // 비동기로 /api/system-status 실측치 조회
+      fetch('/api/system-status')
+        .then(res => res.json())
+        .then(json => {
+          const sys = json?.data?.system;
+          const valEl = c3.querySelector('#student-real-memory');
+          const subEl = c3.querySelector('#student-real-memory-sub');
+          if (sys && sys.kind === 'real') {
+            const usedGb = (sys.usedMemoryBytes / (1024 ** 3)).toFixed(1);
+            const totalGb = (sys.totalMemoryBytes / (1024 ** 3)).toFixed(1);
+            const measuredTime = sys.measuredAt ? new Date(sys.measuredAt).toLocaleTimeString('ko-KR') : '시간 미확인';
+            if (valEl) valEl.textContent = `사용률 ${sys.memoryUsagePercent}% (${usedGb} / ${totalGb} GB)`;
+            if (subEl) subEl.textContent = `잰 시각: ${measuredTime} (가동: ${Math.floor(sys.uptimeSeconds / 3600)}시간)`;
+          } else {
+            if (valEl) valEl.textContent = '확인 불가';
+            if (subEl) subEl.textContent = '사유: 시스템 상태 측정값 형식 미확인';
+          }
+        })
+        .catch(err => {
+          const valEl = c3.querySelector('#student-real-memory');
+          const subEl = c3.querySelector('#student-real-memory-sub');
+          if (valEl) valEl.textContent = '확인 불가';
+          if (subEl) subEl.textContent = '사유: 일반 권한 측정 API 호출 응답 없음';
+        });
+
+      // 4. 실시간 위협(XDR) 및 조치 카드 (예시 데이터)
+      const c4 = document.createElement('div');
+      c4.className = 'card metric-card';
+      c4.innerHTML = `
+        <div class="metric-header">
+          <span class="metric-title">실시간 위협 및 조치</span>
+          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+        </div>
+        <div class="metric-value val-info">위협 1건 탐지</div>
+        <div class="metric-sub">조치 대기: 0건 (모의 정책)</div>
+      `;
+      cardGrid.appendChild(c4);
+
+      dashboardSection.appendChild(cardGrid);
+      root.appendChild(dashboardSection);
+
+      // 하위 상세 dl 유지 (제공 요구사항 준수)
+      const dl = document.createElement('dl');
+      dl.className = 'identity';
+      dl.style.marginTop = '16px';
+      const userDt = document.createElement('dt'); userDt.textContent = '사용자';
+      const userDd = document.createElement('dd');
+      userDd.textContent = userName;
+      dl.appendChild(userDt); dl.appendChild(userDd);
+      const deviceDt = document.createElement('dt'); deviceDt.textContent = '기기';
+      const deviceDd = document.createElement('dd');
+      deviceDd.textContent = `${deviceName} · ${formatDeviceStatus(device?.status)}`;
+      dl.appendChild(deviceDt); dl.appendChild(deviceDd);
+      const sessionDt = document.createElement('dt'); sessionDt.textContent = '세션';
+      const sessionDd = document.createElement('dd');
+      sessionDd.textContent = `${sessionId} · ${formatSessionStatus(session?.status)}`;
+      dl.appendChild(sessionDt); dl.appendChild(sessionDd);
+      root.appendChild(dl);
+
       if (devices && devices !== me) {
         if (devices.status === 'error') {
           const devErr = document.createElement('p'); devErr.className = 'state state-error';
@@ -215,7 +312,34 @@ export function createStudentView() {
           const modeBadge = document.createElement('span'); modeBadge.className = 'tag tag-demo'; modeBadge.textContent = MODE_LABELS[input.mode]; root.appendChild(modeBadge);
         }
         const sortedEvents = [...rawData].sort((a, b) => (b.at ? new Date(b.at).getTime() : 0) - (a.at ? new Date(a.at).getTime() : 0));
-        const filterControls = document.createElement('div'); filterControls.className = 'event-filters row'; filterControls.style.marginBottom = '12px';
+
+        // --- 보안 이벤트 발생 추이 요약 (Trend Summary) ---
+        const totalCount = sortedEvents.length;
+        const accessCount = sortedEvents.filter(e => e.kind === 'access').length;
+        const xdrCount = sortedEvents.filter(e => e.kind === 'xdr').length;
+        const deniedCount = sortedEvents.filter(e => e.state?.access === 'denied').length;
+
+        const trendBox = document.createElement('div');
+        trendBox.className = 'card event-trend-box';
+        trendBox.innerHTML = `
+          <div class="trend-header">
+            <strong>보안 이벤트 발생 추이 및 현황</strong>
+            <span class="tag tag-mock">[예시]</span>
+          </div>
+          <div class="trend-stats-row">
+            <div class="stat-pill">전체 기록 <strong>${totalCount}건</strong></div>
+            <div class="stat-pill stat-access">접속(access) <strong>${accessCount}건</strong></div>
+            <div class="stat-pill stat-xdr">XDR 경보 <strong>${xdrCount}건</strong></div>
+            <div class="stat-pill stat-denied">차단/거부 <strong>${deniedCount}건</strong></div>
+          </div>
+          <div class="trend-visual-bar" title="이벤트 유형별 비율">
+            <div class="bar-segment bar-access" style="width: ${totalCount ? (accessCount / totalCount * 100) : 0}%"></div>
+            <div class="bar-segment bar-xdr" style="width: ${totalCount ? (xdrCount / totalCount * 100) : 0}%"></div>
+          </div>
+        `;
+        root.appendChild(trendBox);
+
+        const filterControls = document.createElement('div'); filterControls.className = 'event-filters row'; filterControls.style.marginBottom = '12px'; filterControls.style.marginTop = '16px';
         const kinds = new Set(), appIds = new Set(), accessStates = new Set();
         for (const ev of sortedEvents) { if (ev.kind) kinds.add(ev.kind); if (ev.appId) appIds.add(ev.appId); if (ev.state?.access) accessStates.add(ev.state.access); }
         const makeFilter = (title, values, format) => {
