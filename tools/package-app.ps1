@@ -64,13 +64,13 @@ try {
   $shortcutPath = Join-Path $packageRoot '케셰브 시작.lnk'
   $shortcut = $shell.CreateShortcut($shortcutPath)
   $shortcut.TargetPath = (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe')
-  $shortcut.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $startScript + '"'
+  $shortcut.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $startScript + '" -Demo'
   $shortcut.WorkingDirectory = $packageRoot
   $shortcut.Description = '케셰브 로컬 앱 서버 시작'
   $shortcut.Save()
 
   $batPath = Join-Path $packageRoot '케셰브 시작.bat'
-  $batContent = "@echo off`r`nchcp 65001 >nul`r`necho [케셰브 앱 시작 중...]`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0tools\start-alekov.ps1`"`r`npause"
+  $batContent = "@echo off`r`nchcp 65001 >nul`r`necho [케셰브 앱 시작 중...]`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0tools\start-alekov.ps1`" -Demo`r`npause"
   [System.IO.File]::WriteAllText($batPath, $batContent, (New-Object System.Text.UTF8Encoding $false))
 
   $completed = $true
