@@ -1,0 +1,12 @@
+{
+  "themeName": "관제 대시보드형 (Control Dashboard)",
+  "dashboardTitle": "케셰브 관제 대시보드",
+  "accentColor": "#0f766e",
+  "realBadgeColor": "#10b981",
+  "sdpBadgeColor": "#c2410c",
+  "keyFeatures": [
+    "상단 4대 관제 지표 요약",
+    "내 PC 보안·네트워크 실측 현황판",
+    "보안 이벤트 발생 추이 및 실시간 필터"
+  ]
+}

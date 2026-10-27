@@ -135,85 +135,230 @@ export function createStudentView() {
       const cardGrid = document.createElement('div');
       cardGrid.className = 'grid-4-cards';
 
-      // 1. 기기 준수 상태 카드 (예시 데이터)
+      // 1. 기기 준수 상태 카드 (SDP 미연결 / 예시 데이터)
       const c1 = document.createElement('div');
       c1.className = 'card metric-card';
       c1.innerHTML = `
         <div class="metric-header">
           <span class="metric-title">기기 준수 상태</span>
-          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+          <span class="tag tag-sdp" title="SDP 서버 미연결 (모의 데이터)">[SDP 미연결 · 예제]</span>
         </div>
         <div class="metric-value ${device?.status === 'compliant' ? 'val-good' : 'val-warn'}">${formatDeviceStatus(device?.status)}</div>
         <div class="metric-sub">${deviceName}</div>
       `;
       cardGrid.appendChild(c1);
 
-      // 2. 로그인 세션 상태 카드 (예시 데이터)
+      // 2. 로그인 세션 상태 카드 (SDP 미연결 / 예시 데이터)
       const c2 = document.createElement('div');
       c2.className = 'card metric-card';
       c2.innerHTML = `
         <div class="metric-header">
           <span class="metric-title">로그인 세션</span>
-          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+          <span class="tag tag-sdp" title="SDP 서버 미연결 (모의 데이터)">[SDP 미연결 · 예제]</span>
         </div>
         <div class="metric-value ${session?.status === 'active' ? 'val-good' : 'val-warn'}">${formatSessionStatus(session?.status)}</div>
         <div class="metric-sub">사용자: ${userName} (${sessionId})</div>
       `;
       cardGrid.appendChild(c2);
 
-      // 3. 내 PC 상태 (실제 메모리/시스템 실측값 카드)
+      // 3. 내 PC 보안 & 네트워크 (실측값 카드)
       const c3 = document.createElement('div');
       c3.className = 'card metric-card metric-real';
       c3.innerHTML = `
         <div class="metric-header">
-          <span class="metric-title">내 PC 리소스 (메모리)</span>
+          <span class="metric-title">내 PC 보안 & 네트워크</span>
           <span class="tag tag-real" title="로컬 PC 일반 권한 실측값">[실측]</span>
         </div>
-        <div class="metric-value val-real" id="student-real-memory">측정 중…</div>
-        <div class="metric-sub" id="student-real-memory-sub">시각: 확인 중</div>
+        <div class="metric-value val-real" id="student-real-security">상태 조회 중…</div>
+        <div class="metric-sub" id="student-real-security-sub">시각: 확인 중</div>
       `;
       cardGrid.appendChild(c3);
 
-      // 비동기로 /api/system-status 실측치 조회
-      fetch('/api/system-status')
-        .then(res => res.json())
-        .then(json => {
-          const sys = json?.data?.system;
-          const valEl = c3.querySelector('#student-real-memory');
-          const subEl = c3.querySelector('#student-real-memory-sub');
-          if (sys && sys.kind === 'real') {
-            const usedGb = (sys.usedMemoryBytes / (1024 ** 3)).toFixed(1);
-            const totalGb = (sys.totalMemoryBytes / (1024 ** 3)).toFixed(1);
-            const measuredTime = sys.measuredAt ? new Date(sys.measuredAt).toLocaleTimeString('ko-KR') : '시간 미확인';
-            if (valEl) valEl.textContent = `사용률 ${sys.memoryUsagePercent}% (${usedGb} / ${totalGb} GB)`;
-            if (subEl) subEl.textContent = `잰 시각: ${measuredTime} (가동: ${Math.floor(sys.uptimeSeconds / 3600)}시간)`;
-          } else {
-            if (valEl) valEl.textContent = '확인 불가';
-            if (subEl) subEl.textContent = '사유: 시스템 상태 측정값 형식 미확인';
-          }
-        })
-        .catch(err => {
-          const valEl = c3.querySelector('#student-real-memory');
-          const subEl = c3.querySelector('#student-real-memory-sub');
-          if (valEl) valEl.textContent = '확인 불가';
-          if (subEl) subEl.textContent = '사유: 일반 권한 측정 API 호출 응답 없음';
-        });
-
-      // 4. 실시간 위협(XDR) 및 조치 카드 (예시 데이터)
+      // 4. 실시간 위협(XDR) 및 조치 카드 (SDP 미연결 / 예시 데이터)
       const c4 = document.createElement('div');
       c4.className = 'card metric-card';
       c4.innerHTML = `
         <div class="metric-header">
           <span class="metric-title">실시간 위협 및 조치</span>
-          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+          <span class="tag tag-sdp" title="SDP 서버 미연결 (모의 데이터)">[SDP 미연결 · 예제]</span>
         </div>
-        <div class="metric-value val-info">위협 1건 탐지</div>
+        <div class="metric-value val-info">위협 1건 탐지 (모의)</div>
         <div class="metric-sub">조치 대기: 0건 (모의 정책)</div>
       `;
       cardGrid.appendChild(c4);
 
       dashboardSection.appendChild(cardGrid);
+
+      // --- [3일차/4일차] 내 PC 네트워크 구성 · 방화벽 · Windows 기록 실측 세부 박스 ---
+      const detailSecurityBox = document.createElement('div');
+      detailSecurityBox.className = 'card security-detail-box';
+
+      // 헤더: 제목 + [실측] 배지 + [다시 조회] 버튼 (키보드 접근성 탑재)
+      const secHeader = document.createElement('div');
+      secHeader.className = 'sec-detail-header';
+
+      const secTitleWrapper = document.createElement('div');
+      secTitleWrapper.className = 'sec-title-wrapper';
+      const secTitle = document.createElement('strong');
+      secTitle.textContent = '내 PC 보안 · 네트워크 구성 실측 현황 (읽기 전용 점검)';
+      const secTag = document.createElement('span');
+      secTag.className = 'tag tag-real';
+      secTag.style.marginLeft = '8px';
+      secTag.textContent = '[실측 · 일반 권한]';
+      secTitleWrapper.appendChild(secTitle);
+      secTitleWrapper.appendChild(secTag);
+      secHeader.appendChild(secTitleWrapper);
+
+      // 다시 조회 버튼 (키보드 지원)
+      const refreshBtn = document.createElement('button');
+      refreshBtn.type = 'button';
+      refreshBtn.id = 'btn-refresh-security';
+      refreshBtn.className = 'btn btn-refresh-sec';
+      refreshBtn.setAttribute('tabindex', '0');
+      refreshBtn.setAttribute('aria-label', '내 PC 보안 및 네트워크 상태 다시 조회');
+      refreshBtn.textContent = '다시 조회';
+      secHeader.appendChild(refreshBtn);
+      detailSecurityBox.appendChild(secHeader);
+
+      // 대기 표시 (로딩 인디케이터)
+      const loadingBanner = document.createElement('div');
+      loadingBanner.className = 'sec-loading-banner';
+      loadingBanner.id = 'sec-loading-indicator';
+      loadingBanner.style.display = 'none';
+      loadingBanner.setAttribute('role', 'status');
+      loadingBanner.setAttribute('aria-live', 'polite');
+      loadingBanner.innerHTML = `<span class="spinner-dot" aria-hidden="true">⏳</span> 로컬 PC 보안 상태(네트워크, 방화벽, 이벤트)를 측정하는 중입니다…`;
+      detailSecurityBox.appendChild(loadingBanner);
+
+      // 실패 시 대응 안내 배너 (기본 숨김)
+      const errorBanner = document.createElement('div');
+      errorBanner.className = 'sec-error-banner';
+      errorBanner.id = 'sec-error-guidance';
+      errorBanner.style.display = 'none';
+      errorBanner.setAttribute('role', 'alert');
+      detailSecurityBox.appendChild(errorBanner);
+
+      // 필수 안내 배너 (침해나 공격 탐지 결과 아님)
+      const noticeBanner = document.createElement('div');
+      noticeBanner.className = 'sec-notice-banner';
+      noticeBanner.setAttribute('role', 'note');
+      noticeBanner.innerHTML = `<strong>안내</strong>: 아래 이벤트 기록 건수는 <u>침해나 공격 탐지 결과가 아닙니다</u>. 일반 Windows 시스템 및 응용 프로그램 동작 중 기록된 정상적인 경고·오류입니다.`;
+      detailSecurityBox.appendChild(noticeBanner);
+
+      // 실측 항목 그리드
+      const secGrid = document.createElement('div');
+      secGrid.className = 'sec-grid-info';
+      secGrid.innerHTML = `
+        <div class="sec-item" id="sec-net-item">
+          <span class="sec-label">네트워크 구성:</span>
+          <span class="sec-val" id="sec-net-val">조회 중…</span>
+        </div>
+        <div class="sec-item" id="sec-fw-item">
+          <span class="sec-label">방화벽 설정 (읽기 전용):</span>
+          <span class="sec-val" id="sec-fw-val">조회 중…</span>
+        </div>
+        <div class="sec-item" id="sec-evt-item">
+          <span class="sec-label">최근 24시간 Windows 기록:</span>
+          <span class="sec-val" id="sec-evt-val">집계 중…</span>
+        </div>
+        <div class="sec-item" id="sec-sdp-item">
+          <span class="sec-label">SDP 서버 실제 연결:</span>
+          <span class="sec-val val-sdp-badge"><span class="tag tag-sdp">SDP 미연결</span> (PC 로컬 실측 성공 데이터와 독립적으로 분리됨)</span>
+        </div>
+      `;
+      detailSecurityBox.appendChild(secGrid);
+      dashboardSection.appendChild(detailSecurityBox);
       root.appendChild(dashboardSection);
+
+      // 실측 데이터 조회 함수 (재호출 및 키보드 지원)
+      function querySecurityStatus() {
+        loadingBanner.style.display = 'block';
+        errorBanner.style.display = 'none';
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = '조회 중…';
+
+        fetch('/api/system-security')
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+          })
+          .then(json => {
+            const sec = json?.data?.security;
+            const valEl = c3.querySelector('#student-real-security');
+            const subEl = c3.querySelector('#student-real-security-sub');
+            const netValEl = detailSecurityBox.querySelector('#sec-net-val');
+            const fwValEl = detailSecurityBox.querySelector('#sec-fw-val');
+            const evtValEl = detailSecurityBox.querySelector('#sec-evt-val');
+
+            if (sec) {
+              if (netValEl) {
+                if (sec.network?.interfaces?.length) {
+                  netValEl.textContent = sec.network.interfaces.map(i => `${i.interface}: ${i.address}`).join(' / ');
+                } else {
+                  netValEl.textContent = '확인 불가 (활성 IPv4 네트워크 없음)';
+                }
+              }
+
+              if (fwValEl) {
+                if (sec.firewall?.status === 'ok') {
+                  fwValEl.textContent = `도메인: ${sec.firewall.domain} · 개인: ${sec.firewall.private} · 공용: ${sec.firewall.public} (읽기 전용)`;
+                } else {
+                  fwValEl.textContent = sec.firewall?.reason || '확인 불가 (방화벽 상태 조회 제한)';
+                }
+              }
+
+              if (evtValEl) {
+                if (sec.windowsEvents?.status === 'ok') {
+                  evtValEl.textContent = `System 경고·오류: ${sec.windowsEvents.systemWarnErrCount}건 · Application 경고·오류: ${sec.windowsEvents.appWarnErrCount}건`;
+                } else {
+                  evtValEl.textContent = sec.windowsEvents?.reason || '확인 불가 (이벤트 로그 접근 제한)';
+                }
+              }
+
+              const measuredTime = sec.network?.measuredAt ? new Date(sec.network.measuredAt).toLocaleTimeString('ko-KR') : '시간 미확인';
+              if (valEl) valEl.textContent = `방화벽: 보호됨 · IP: ${sec.network?.interfaces?.[0]?.address || '미확인'}`;
+              if (subEl) subEl.textContent = `잰 시각: ${measuredTime} (이벤트 경고·오류: ${sec.windowsEvents?.systemWarnErrCount ?? 0}건)`;
+            } else {
+              throw new Error('응답 데이터 형식 미확인');
+            }
+          })
+          .catch(err => {
+            const valEl = c3.querySelector('#student-real-security');
+            const subEl = c3.querySelector('#student-real-security-sub');
+            if (valEl) valEl.textContent = '확인 불가';
+            if (subEl) subEl.textContent = '사유: 일반 권한 보안 측정 API 호출 실패';
+
+            // 실패 시 예시 값을 보여주지 않고, 실패한 항목과 다음에 할 일을 명확히 표시
+            errorBanner.style.display = 'block';
+            errorBanner.innerHTML = `
+              <div class="error-guidance-title">⚠️ <strong>조회 실패 안내</strong> (가짜 예시 값을 표시하지 않습니다)</div>
+              <div class="error-guidance-body">
+                <p>• <strong>실패한 항목</strong>: 로컬 PC 보안 상태 API (/api/system-security) 응답 수신 실패 (${err.message})</p>
+                <p>• <strong>다음에 할 일</strong>:
+                  1. 앱 서버 터미널이 켜져 있는지 확인하세요 (<code>node src/server.mjs --demo</code>).<br>
+                  2. 상단의 <strong>[다시 조회]</strong> 버튼을 누르거나 <code>Tab</code> 키로 이동 후 <code>Enter</code>를 눌러 다시 시도하세요.
+                </p>
+              </div>
+            `;
+          })
+          .finally(() => {
+            loadingBanner.style.display = 'none';
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = '다시 조회';
+          });
+      }
+
+      // 버튼 클릭 및 키보드(Enter, Space) 이벤트 등록
+      refreshBtn.addEventListener('click', querySecurityStatus);
+      refreshBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          querySecurityStatus();
+        }
+      });
+
+      // 최초 1회 자동 로드
+      querySecurityStatus();
 
       // 하위 상세 dl 유지 (제공 요구사항 준수)
       const dl = document.createElement('dl');
