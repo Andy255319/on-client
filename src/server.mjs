@@ -1,5 +1,6 @@
 import http from 'node:http';
 import os from 'node:os';
+import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
@@ -682,12 +683,86 @@ export function createOnServer(serverOptions={}) {
         send(200,{ok:true,data:guide});return;
         }finally{closeNativeHostOperation(nativeOperation);}
       }
-      if(req.method==='GET'&&(url.pathname==='/api/diagnostics'||url.pathname==='/api/system-status')){
-        // 일반 권한으로 읽을 수 있는 로컬 PC 메모리·가동시간 상태를 측정한다.
+      if(req.method==='GET'&&(url.pathname==='/api/diagnostics'||url.pathname==='/api/system-status'||url.pathname==='/api/system-security')){
+        // 일반 권한으로 읽을 수 있는 로컬 PC 메모리·네트워크·방화벽·이벤트 상태를 측정한다.
         const totalMem=os.totalmem();
         const freeMem=os.freemem();
         const usedMem=totalMem-freeMem;
         const memoryUsagePercent=Number(((usedMem/totalMem)*100).toFixed(1));
+
+        // 1. 네트워크 인터페이스 (일반 권한 os.networkInterfaces)
+        const rawNets = os.networkInterfaces();
+        const networkList = [];
+        for (const name of Object.keys(rawNets)) {
+          for (const net of rawNets[name]) {
+            if (!net.internal && net.family === 'IPv4') {
+              networkList.push({ interface: name, address: net.address, netmask: net.netmask, family: net.family });
+            }
+          }
+        }
+
+        // 2. 방화벽 설정 읽기 전용 조회 (netsh advfirewall show allprofiles state)
+        let firewallInfo;
+        if (process.platform === 'win32') {
+          try {
+            const rawFw = execFileSync('netsh.exe', ['advfirewall', 'show', 'allprofiles', 'state'], {
+              encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore']
+            });
+            const profiles = {};
+            for (const line of rawFw.split(/\r?\n/)) {
+              if (line.includes('도메인') || line.includes('Domain')) profiles.current = 'domain';
+              else if (line.includes('개인') || line.includes('Private')) profiles.current = 'private';
+              else if (line.includes('공용') || line.includes('Public')) profiles.current = 'public';
+              if (line.includes('상태') || line.includes('State')) {
+                profiles[profiles.current || 'general'] = (line.includes('사용') || line.includes('ON') || line.includes('켜짐') || line.includes('1')) ? '사용 중 (보호됨)' : '사용 안 함';
+              }
+            }
+            firewallInfo = {
+              status: 'ok',
+              domain: profiles.domain || '확인 완료',
+              private: profiles.private || '확인 완료',
+              public: profiles.public || '확인 완료',
+              readOnly: true,
+              measuredAt: clock().toISOString()
+            };
+          } catch {
+            firewallInfo = { status: 'unavailable', reason: '확인 불가 (방화벽 상태 조회 제한)', readOnly: true, measuredAt: clock().toISOString() };
+          }
+        } else {
+          firewallInfo = { status: 'unavailable', reason: 'Windows 환경 아님', readOnly: true, measuredAt: clock().toISOString() };
+        }
+
+        // 3. 최근 Windows 이벤트 기록 집계 (System·Application 경고/오류)
+        let eventLogInfo;
+        if (process.platform === 'win32') {
+          try {
+            const cmd = '$s=@(Get-WinEvent -FilterHashtable @{LogName=\'System\'; Level=@(2,3); StartTime=(Get-Date).AddDays(-1)} -MaxEvents 50 -ErrorAction SilentlyContinue).Count; $a=@(Get-WinEvent -FilterHashtable @{LogName=\'Application\'; Level=@(2,3); StartTime=(Get-Date).AddDays(-1)} -MaxEvents 50 -ErrorAction SilentlyContinue).Count; Write-Output "$s,$a"';
+            const rawEvt = execFileSync('powershell.exe', ['-NoProfile', '-Command', cmd], {
+              encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore']
+            }).trim();
+            const [sysC, appC] = rawEvt.split(',').map(v => parseInt(v.trim(), 10) || 0);
+            eventLogInfo = {
+              status: 'ok',
+              systemWarnErrCount: sysC,
+              appWarnErrCount: appC,
+              period: '최근 24시간',
+              notice: '이 건수는 침해나 공격 탐지 결과가 아닙니다 (일반 시스템·응용프로그램 동작 기록입니다)',
+              measuredAt: clock().toISOString()
+            };
+          } catch {
+            eventLogInfo = { status: 'unavailable', reason: '확인 불가 (이벤트 로그 접근 권한 필요 또는 서비스 미응답)', period: '최근 24시간', notice: '이 건수는 침해나 공격 탐지 결과가 아닙니다', measuredAt: clock().toISOString() };
+          }
+        } else {
+          eventLogInfo = { status: 'unavailable', reason: 'Windows 환경 아님', period: '최근 24시간', notice: '이 건수는 침해나 공격 탐지 결과가 아닙니다', measuredAt: clock().toISOString() };
+        }
+
+        const security = {
+          network: { status: 'ok', interfaces: networkList, measuredAt: clock().toISOString() },
+          firewall: firewallInfo,
+          windowsEvents: eventLogInfo,
+          sdpConnection: { status: 'disconnected', label: 'SDP 미연결 (모의 예제 모드)', note: '로컬 PC 실측 성공값과 분리되어 표시됩니다.' }
+        };
+
         const system={
           kind:'real',
           totalMemoryBytes:totalMem,
@@ -700,7 +775,7 @@ export function createOnServer(serverOptions={}) {
         };
         const info=(mappedAi??defaultAi).connectionInfo();
         send(200,{ok:true,data:{requestId,component:'on-client',version:'0.1.0',engine:{mode,code:mode==='disconnected'?'ENGINE_NOT_CONNECTED':mode==='demo'?'DEMO_ONLY':'ADAPTER_CONFIGURED'},
-          ai:{configured:info?.configured===true,authorized:false,authorizationRequired:true},system,checkedAt:clock().toISOString(),workbenchRequiredAtRuntime:false}});return;
+          ai:{configured:info?.configured===true,authorized:false,authorizationRequired:true},system,security,checkedAt:clock().toISOString(),workbenchRequiredAtRuntime:false}});return;
       }
       if(req.method==='GET'&&url.pathname==='/api/vulnerabilities'){
         const data=await bounded(signal=>scanner.scan({signal}));send(200,{ok:true,data});

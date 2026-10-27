@@ -316,3 +316,71 @@ main:focus { outline: none; }
 }
 .bar-segment.bar-access { background: #3b82f6; }
 .bar-segment.bar-xdr { background: #ef4444; }
+
+/* 3일차 네트워크 구성·방화벽·Windows 기록 실측 박스 스타일 */
+.tag-sdp {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.security-detail-box {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.sec-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+.sec-notice-banner {
+  background: #f8fafc;
+  border-left: 4px solid #64748b;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.4;
+  border-radius: 0 4px 4px 0;
+}
+.sec-notice-banner u {
+  text-decoration: underline;
+  font-weight: 600;
+  color: #1e293b;
+}
+.sec-grid-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.sec-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+.sec-label {
+  font-weight: 600;
+  color: var(--muted, #64748b);
+  min-width: 175px;
+}
+.sec-val {
+  color: var(--text, #1e293b);
+  word-break: break-all;
+}
+.val-sdp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+

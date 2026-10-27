@@ -135,85 +135,151 @@ export function createStudentView() {
       const cardGrid = document.createElement('div');
       cardGrid.className = 'grid-4-cards';
 
-      // 1. 기기 준수 상태 카드 (예시 데이터)
+      // 1. 기기 준수 상태 카드 (SDP 미연결 / 예시 데이터)
       const c1 = document.createElement('div');
       c1.className = 'card metric-card';
       c1.innerHTML = `
         <div class="metric-header">
           <span class="metric-title">기기 준수 상태</span>
-          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+          <span class="tag tag-sdp" title="SDP 서버 미연결 (모의 데이터)">[SDP 미연결 · 예제]</span>
         </div>
         <div class="metric-value ${device?.status === 'compliant' ? 'val-good' : 'val-warn'}">${formatDeviceStatus(device?.status)}</div>
         <div class="metric-sub">${deviceName}</div>
       `;
       cardGrid.appendChild(c1);
 
-      // 2. 로그인 세션 상태 카드 (예시 데이터)
+      // 2. 로그인 세션 상태 카드 (SDP 미연결 / 예시 데이터)
       const c2 = document.createElement('div');
       c2.className = 'card metric-card';
       c2.innerHTML = `
         <div class="metric-header">
           <span class="metric-title">로그인 세션</span>
-          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+          <span class="tag tag-sdp" title="SDP 서버 미연결 (모의 데이터)">[SDP 미연결 · 예제]</span>
         </div>
         <div class="metric-value ${session?.status === 'active' ? 'val-good' : 'val-warn'}">${formatSessionStatus(session?.status)}</div>
         <div class="metric-sub">사용자: ${userName} (${sessionId})</div>
       `;
       cardGrid.appendChild(c2);
 
-      // 3. 내 PC 상태 (실제 메모리/시스템 실측값 카드)
+      // 3. 내 PC 보안 & 네트워크 (실측값 카드)
       const c3 = document.createElement('div');
       c3.className = 'card metric-card metric-real';
       c3.innerHTML = `
         <div class="metric-header">
-          <span class="metric-title">내 PC 리소스 (메모리)</span>
+          <span class="metric-title">내 PC 보안 & 네트워크</span>
           <span class="tag tag-real" title="로컬 PC 일반 권한 실측값">[실측]</span>
         </div>
-        <div class="metric-value val-real" id="student-real-memory">측정 중…</div>
-        <div class="metric-sub" id="student-real-memory-sub">시각: 확인 중</div>
+        <div class="metric-value val-real" id="student-real-security">상태 조회 중…</div>
+        <div class="metric-sub" id="student-real-security-sub">시각: 확인 중</div>
       `;
       cardGrid.appendChild(c3);
 
-      // 비동기로 /api/system-status 실측치 조회
-      fetch('/api/system-status')
-        .then(res => res.json())
-        .then(json => {
-          const sys = json?.data?.system;
-          const valEl = c3.querySelector('#student-real-memory');
-          const subEl = c3.querySelector('#student-real-memory-sub');
-          if (sys && sys.kind === 'real') {
-            const usedGb = (sys.usedMemoryBytes / (1024 ** 3)).toFixed(1);
-            const totalGb = (sys.totalMemoryBytes / (1024 ** 3)).toFixed(1);
-            const measuredTime = sys.measuredAt ? new Date(sys.measuredAt).toLocaleTimeString('ko-KR') : '시간 미확인';
-            if (valEl) valEl.textContent = `사용률 ${sys.memoryUsagePercent}% (${usedGb} / ${totalGb} GB)`;
-            if (subEl) subEl.textContent = `잰 시각: ${measuredTime} (가동: ${Math.floor(sys.uptimeSeconds / 3600)}시간)`;
-          } else {
-            if (valEl) valEl.textContent = '확인 불가';
-            if (subEl) subEl.textContent = '사유: 시스템 상태 측정값 형식 미확인';
-          }
-        })
-        .catch(err => {
-          const valEl = c3.querySelector('#student-real-memory');
-          const subEl = c3.querySelector('#student-real-memory-sub');
-          if (valEl) valEl.textContent = '확인 불가';
-          if (subEl) subEl.textContent = '사유: 일반 권한 측정 API 호출 응답 없음';
-        });
-
-      // 4. 실시간 위협(XDR) 및 조치 카드 (예시 데이터)
+      // 4. 실시간 위협(XDR) 및 조치 카드 (SDP 미연결 / 예시 데이터)
       const c4 = document.createElement('div');
       c4.className = 'card metric-card';
       c4.innerHTML = `
         <div class="metric-header">
           <span class="metric-title">실시간 위협 및 조치</span>
-          <span class="tag tag-mock" title="모의 예제 데이터">[예시]</span>
+          <span class="tag tag-sdp" title="SDP 서버 미연결 (모의 데이터)">[SDP 미연결 · 예제]</span>
         </div>
-        <div class="metric-value val-info">위협 1건 탐지</div>
+        <div class="metric-value val-info">위협 1건 탐지 (모의)</div>
         <div class="metric-sub">조치 대기: 0건 (모의 정책)</div>
       `;
       cardGrid.appendChild(c4);
 
       dashboardSection.appendChild(cardGrid);
+
+      // --- [3일차] 내 PC 네트워크 구성 · 방화벽 · Windows 기록 실측 세부 박스 ---
+      const detailSecurityBox = document.createElement('div');
+      detailSecurityBox.className = 'card security-detail-box';
+      detailSecurityBox.innerHTML = `
+        <div class="sec-detail-header">
+          <strong>내 PC 보안 · 네트워크 구성 실측 현황 (읽기 전용 점검)</strong>
+          <span class="tag tag-real">[실측 · 일반 권한]</span>
+        </div>
+
+        <div class="sec-notice-banner" role="note">
+          <strong>안내</strong>: 아래 이벤트 기록 건수는 <u>침해나 공격 탐지 결과가 아닙니다</u>. 일반 Windows 시스템 및 응용 프로그램 동작 중 기록된 정상적인 경고·오류입니다.
+        </div>
+
+        <div class="sec-grid-info">
+          <div class="sec-item" id="sec-net-item">
+            <span class="sec-label">네트워크 구성:</span>
+            <span class="sec-val" id="sec-net-val">조회 중…</span>
+          </div>
+          <div class="sec-item" id="sec-fw-item">
+            <span class="sec-label">방화벽 설정 (읽기 전용):</span>
+            <span class="sec-val" id="sec-fw-val">조회 중…</span>
+          </div>
+          <div class="sec-item" id="sec-evt-item">
+            <span class="sec-label">최근 24시간 Windows 기록:</span>
+            <span class="sec-val" id="sec-evt-val">집계 중…</span>
+          </div>
+          <div class="sec-item" id="sec-sdp-item">
+            <span class="sec-label">SDP 서버 실제 연결:</span>
+            <span class="sec-val val-sdp-badge"><span class="tag tag-sdp">SDP 미연결</span> (PC 로컬 실측 성공 데이터와 독립적으로 분리됨)</span>
+          </div>
+        </div>
+      `;
+      dashboardSection.appendChild(detailSecurityBox);
       root.appendChild(dashboardSection);
+
+      // 비동기로 /api/system-security 실측치 조회
+      fetch('/api/system-security')
+        .then(res => res.json())
+        .then(json => {
+          const sec = json?.data?.security;
+          const valEl = c3.querySelector('#student-real-security');
+          const subEl = c3.querySelector('#student-real-security-sub');
+
+          const netValEl = detailSecurityBox.querySelector('#sec-net-val');
+          const fwValEl = detailSecurityBox.querySelector('#sec-fw-val');
+          const evtValEl = detailSecurityBox.querySelector('#sec-evt-val');
+
+          if (sec) {
+            // 1. 네트워크
+            const primaryNet = (sec.network?.interfaces && sec.network.interfaces[0]) ? `${sec.network.interfaces[0].interface} (${sec.network.interfaces[0].address})` : '활성 IPv4 없음';
+            if (netValEl) {
+              if (sec.network?.interfaces?.length) {
+                netValEl.textContent = sec.network.interfaces.map(i => `${i.interface}: ${i.address}`).join(' / ');
+              } else {
+                netValEl.textContent = '확인 불가 (활성 네트워크 없음)';
+              }
+            }
+
+            // 2. 방화벽
+            if (fwValEl) {
+              if (sec.firewall?.status === 'ok') {
+                fwValEl.textContent = `도메인: ${sec.firewall.domain} · 개인: ${sec.firewall.private} · 공용: ${sec.firewall.public} (읽기 전용)`;
+              } else {
+                fwValEl.textContent = sec.firewall?.reason || '확인 불가 (방화벽 상태 조회 제한)';
+              }
+            }
+
+            // 3. Windows 기록 건수
+            if (evtValEl) {
+              if (sec.windowsEvents?.status === 'ok') {
+                evtValEl.textContent = `System 경고·오류: ${sec.windowsEvents.systemWarnErrCount}건 · Application 경고·오류: ${sec.windowsEvents.appWarnErrCount}건`;
+              } else {
+                evtValEl.textContent = sec.windowsEvents?.reason || '확인 불가 (이벤트 로그 접근 제한)';
+              }
+            }
+
+            // 카드 3 요약
+            const measuredTime = sec.network?.measuredAt ? new Date(sec.network.measuredAt).toLocaleTimeString('ko-KR') : '시간 미확인';
+            if (valEl) valEl.textContent = `방화벽: 보호됨 · IP: ${sec.network?.interfaces?.[0]?.address || '미확인'}`;
+            if (subEl) subEl.textContent = `잰 시각: ${measuredTime} (이벤트 경고·오류: ${sec.windowsEvents?.systemWarnErrCount ?? 0}건)`;
+          } else {
+            if (valEl) valEl.textContent = '확인 불가';
+            if (subEl) subEl.textContent = '사유: 보안 상태 측정값 형식 미확인';
+          }
+        })
+        .catch(() => {
+          const valEl = c3.querySelector('#student-real-security');
+          const subEl = c3.querySelector('#student-real-security-sub');
+          if (valEl) valEl.textContent = '확인 불가';
+          if (subEl) subEl.textContent = '사유: 일반 권한 보안 측정 API 응답 없음';
+        });
 
       // 하위 상세 dl 유지 (제공 요구사항 준수)
       const dl = document.createElement('dl');
