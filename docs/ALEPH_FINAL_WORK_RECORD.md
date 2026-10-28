@@ -11,7 +11,7 @@
 - **행사명**: 2026 KIT K-뉴딜 SKT ALEPH 공동 방어전
 - **앱 이름**: 케셰브 (관제 대시보드형 ZTNA·XDR 보안 Agent)
 - **저장소 주소**: https://github.com/Andy255319/on-client.git
-- **최종 커밋 해시 (40자리)**: `170c9085e5a536f36e0dca90e61b9c86523ded0b`
+- **최종 커밋 해시 (40자리)**: `89c6d4f69e5f54aa6d201d62d1602209454b6cd9`
 
 ---
 
@@ -89,7 +89,7 @@
 
 - **실행 환경**: Windows 11 (Windows_NT), Node.js v24.21.0 (권장 v24.19.0 충족)
 - **필요한 사전 설치물**: Node.js 22~24 이외의 외부 npm 의존성 없음 (0 dependency)
-- **최종 소스 커밋**: `170c9085e5a536f36e0dca90e61b9c86523ded0b` (`13adc27`)
+- **최종 소스 커밋**: `89c6d4f69e5f54aa6d201d62d1602209454b6cd9` (`13adc27`)
 - **실행 패키지 경로**: `dist\Keshev`
 - **소스와 패키지 일치 여부**: `student/extension.mjs`, `public/style.css`가 `dist/Keshev` 내부에 100% 동기화 반영됨
 - **다시 실행한 명령**:

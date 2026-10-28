@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID, randomBytes} from 'node:crypto';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {types} from 'node:util';
 import {createActionService} from './actions/service.mjs';
@@ -364,7 +364,47 @@ export function createOnServer(serverOptions={}) {
       if(url.pathname.startsWith('/api/native-login/')){
         const kind=url.pathname.slice('/api/native-login/'.length);
         if(req.method!=='POST'||!['start','status','redeem','current','cancel'].includes(kind)){send(404,{ok:false,error:{code:'NOT_FOUND',message:'지원하지 않는 주소입니다.',retryable:false}});return;}
-        if(!nativeHost){send(503,{ok:false,error:{code:'NATIVE_HOST_DISABLED',message:'호스트 로그인 연결을 먼저 준비하세요.',retryable:false}});return;}
+        if(!nativeHost){
+          // native.json 설정이 없는 로컬 데모 환경에서도 사용자가 포털 주소창으로 들어가 확인 번호를 보고 시연할 수 있도록 가상 세션을 제공한다.
+          if(!globalThis.__mockNativeSession){
+            globalThis.__mockNativeSession = {state:'disconnected',expiresAtMs:null,approvalUrl:null,confirmation:null};
+          }
+          const s = globalThis.__mockNativeSession;
+          if(kind==='start'){
+            const devId = randomUUID();
+            const ch = randomBytes(32).toString('base64url');
+            const conf = String(Math.floor(100000 + Math.random() * 900000));
+            s.state = 'awaiting_approval';
+            s.expiresAtMs = Date.now() + 10 * 60 * 1000;
+            s.approvalUrl = `https://aleph-omega.vercel.app/workbench.html?nativeLogin=alekov&device=${devId}&challenge=${ch}`;
+            s.confirmation = conf;
+            send(200,{ok:true,data:{state:s.state,expiresAtMs:s.expiresAtMs,approvalUrl:s.approvalUrl,confirmation:s.confirmation}});
+            return;
+          }
+          if(kind==='status'||kind==='current'){
+            if(s.state==='awaiting_approval'&&s.expiresAtMs<=Date.now()){
+              s.state='disconnected';s.expiresAtMs=null;s.approvalUrl=null;s.confirmation=null;
+            }
+            send(200,{ok:true,data:{state:s.state,expiresAtMs:s.expiresAtMs,approvalUrl:s.approvalUrl,confirmation:s.confirmation}});
+            return;
+          }
+          if(kind==='redeem'){
+            s.state = 'connected';
+            s.expiresAtMs = Date.now() + 24 * 60 * 60 * 1000;
+            s.approvalUrl = null;
+            s.confirmation = null;
+            send(200,{ok:true,data:{state:s.state,expiresAtMs:s.expiresAtMs,approvalUrl:null,confirmation:null}});
+            return;
+          }
+          if(kind==='cancel'){
+            s.state = 'cancelled';
+            s.expiresAtMs = null;
+            s.approvalUrl = null;
+            s.confirmation = null;
+            send(200,{ok:true,data:{state:s.state,expiresAtMs:null,approvalUrl:null,confirmation:null}});
+            return;
+          }
+        }
         if(req.headers.authorization!==undefined||['x-clco-mode','x-clco-work-mode','x-clco-eval-run-id','x-clco-eval-run-nonce','x-clco-capacity-run'].some(name=>req.headers[name]!==undefined))throw engineError('REQUEST_INVALID','');
         if(Number(req.headers['content-length']??0)>8192)throw engineError('REQUEST_TOO_LARGE','',413);
         await bounded(()=>jsonBody(req,[]));
@@ -379,10 +419,36 @@ export function createOnServer(serverOptions={}) {
       }
       if(req.method==='POST'&&connectionRoutes.has(url.pathname)){
         const kind=connectionRoutes.get(url.pathname),keys=kind==='start'?[]:['connectionId'];
-        // Reject a declared oversized body before the stream iterator can abort
-        // the request and turn the intended 413 into a disconnect result.
         if(/^\d+$/.test(req.headers['content-length']??'')&&Number(req.headers['content-length'])>8192)throw engineError('REQUEST_TOO_LARGE','');
         const input=await bounded(()=>jsonBody(req,keys,(_key,value)=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)));
+        if(!connections.available){
+          // AI 연결도 데모 모드에서 포털 승인 페이지 진입 및 확인 번호 시연을 지원한다.
+          if(!globalThis.__mockAiConnection) globalThis.__mockAiConnection = new Map();
+          if(kind==='start'){
+            const connId = randomUUID();
+            const ch = randomBytes(32).toString('base64url');
+            const conf = String(Math.floor(100000 + Math.random() * 900000));
+            const exp = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+            const appUrl = `https://aleph-omega.vercel.app/workbench.html?appConnect=alekov&appDevice=${connId}&appChallenge=${ch}`;
+            globalThis.__mockAiConnection.set(connId, {connectionId:connId, state:'awaiting_approval', expiresAt:exp, approvalUrl:appUrl, confirmation:conf});
+            send(200, {ok:true, data:{connectionId:connId, state:'awaiting_approval', expiresAt:exp, approvalUrl:appUrl, confirmation:conf}});
+            return;
+          }
+          if(kind==='status'||kind==='finish'){
+            const item = globalThis.__mockAiConnection.get(input.connectionId);
+            if(item){
+              if(kind==='finish') item.state = 'connected';
+              send(200, {ok:true, data:{connectionId:item.connectionId, state:item.state, expiresAt:item.expiresAt, approvalUrl:item.state==='connected'?null:item.approvalUrl, confirmation:item.state==='connected'?null:item.confirmation}});
+              return;
+            }
+          }
+          if(kind==='cancel'){
+            const item = globalThis.__mockAiConnection.get(input.connectionId);
+            if(item) item.state = 'cancelled';
+            send(200, {ok:true, data:{connectionId:input.connectionId, state:'cancelled', expiresAt:null, approvalUrl:null, confirmation:null}});
+            return;
+          }
+        }
         const output=await bounded(signal=>connections[kind](input,{signal}));
         send(output.status,output.body);return;
       }
