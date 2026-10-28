@@ -1,0 +1,506 @@
+{
+    "schema":  "keshev.ai-security-kit.snapshot.v1",
+    "kitVersion":  "1.0",
+    "collectedAt":  "2026-10-28T15:41:12.1351962+09:00",
+    "readOnly":  true,
+    "os":  {
+               "caption":  "Microsoft Windows 11 Pro",
+               "version":  "10.0.26100",
+               "build":  "26100",
+               "lastBoot":  "2026-10-28T08:44:29.5000000+09:00",
+               "uptimeHours":  6.9,
+               "domainJoined":  false,
+               "memoryTotalGB":  15.8,
+               "memoryFreeGB":  6.6,
+               "memoryUsedPercent":  58.3
+           },
+    "cpu":  {
+                "name":  "Intel(R) Core(TM) i7-10700 CPU @ 2.90GHz",
+                "loadPercent":  6
+            },
+    "disks":  [
+                  {
+                      "drive":  "C:",
+                      "sizeGB":  465.6,
+                      "freeGB":  214.6,
+                      "freePercent":  46.1
+                  },
+                  {
+                      "drive":  "E:",
+                      "sizeGB":  465.7,
+                      "freeGB":  463.6,
+                      "freePercent":  99.5
+                  }
+              ],
+    "processes":  {
+                      "count":  251,
+                      "byCpu":  [
+                                    {
+                                        "name":  "RobloxPlayerBeta",
+                                        "cpuSeconds":  565.3,
+                                        "memoryMB":  175.5
+                                    },
+                                    {
+                                        "name":  "chrome",
+                                        "cpuSeconds":  304.5,
+                                        "memoryMB":  181.3
+                                    },
+                                    {
+                                        "name":  "Antigravity IDE",
+                                        "cpuSeconds":  284.5,
+                                        "memoryMB":  375.9
+                                    },
+                                    {
+                                        "name":  "chrome",
+                                        "cpuSeconds":  265.2,
+                                        "memoryMB":  150
+                                    },
+                                    {
+                                        "name":  "Discord",
+                                        "cpuSeconds":  260.1,
+                                        "memoryMB":  409
+                                    },
+                                    {
+                                        "name":  "explorer",
+                                        "cpuSeconds":  146.3,
+                                        "memoryMB":  313.3
+                                    },
+                                    {
+                                        "name":  "ChatGPT",
+                                        "cpuSeconds":  123.5,
+                                        "memoryMB":  227.2
+                                    },
+                                    {
+                                        "name":  "chrome",
+                                        "cpuSeconds":  100.3,
+                                        "memoryMB":  199.5
+                                    }
+                                ],
+                      "byMemory":  [
+                                       {
+                                           "name":  "Memory Compression",
+                                           "memoryMB":  1253.6
+                                       },
+                                       {
+                                           "name":  "Discord",
+                                           "memoryMB":  409
+                                       },
+                                       {
+                                           "name":  "Antigravity IDE",
+                                           "memoryMB":  375.9
+                                       },
+                                       {
+                                           "name":  "Antigravity IDE",
+                                           "memoryMB":  361.7
+                                       },
+                                       {
+                                           "name":  "explorer",
+                                           "memoryMB":  313.3
+                                       },
+                                       {
+                                           "name":  "chrome",
+                                           "memoryMB":  311.4
+                                       },
+                                       {
+                                           "name":  "ChatGPT",
+                                           "memoryMB":  291.7
+                                       },
+                                       {
+                                           "name":  "agy",
+                                           "memoryMB":  259.8
+                                       }
+                                   ]
+                  },
+    "defender":  {
+                     "serviceEnabled":  false,
+                     "antivirusEnabled":  false,
+                     "realTimeProtection":  false,
+                     "signatureUpdated":  null,
+                     "signatureAgeDays":  null,
+                     "quickScanAgeDays":  4294967295
+                 },
+    "antivirusProducts":  [
+                              {
+                                  "name":  "알약",
+                                  "productState":  266240
+                              },
+                              {
+                                  "name":  "Windows Defender",
+                                  "productState":  393472
+                              }
+                          ],
+    "firewall":  [
+                     {
+                         "profile":  "Domain",
+                         "enabled":  true
+                     },
+                     {
+                         "profile":  "Private",
+                         "enabled":  true
+                     },
+                     {
+                         "profile":  "Public",
+                         "enabled":  true
+                     }
+                 ],
+    "listening":  [
+                      {
+                          "address":  "::",
+                          "port":  135,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  135,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "\u003c이 PC 주소\u003e",
+                          "port":  139,
+                          "allInterfaces":  false,
+                          "process":  "System"
+                      },
+                      {
+                          "address":  "\u003c이 PC 주소\u003e",
+                          "port":  139,
+                          "allInterfaces":  false,
+                          "process":  "System"
+                      },
+                      {
+                          "address":  "\u003c이 PC 주소\u003e",
+                          "port":  139,
+                          "allInterfaces":  false,
+                          "process":  "System"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  445,
+                          "allInterfaces":  true,
+                          "process":  "System"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  902,
+                          "allInterfaces":  true,
+                          "process":  "vmware-authd"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  912,
+                          "allInterfaces":  true,
+                          "process":  "vmware-authd"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  3580,
+                          "allInterfaces":  true,
+                          "process":  "System"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  5040,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "127.0.0.1",
+                          "port":  6463,
+                          "allInterfaces":  false,
+                          "process":  "Discord"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  7680,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "::1",
+                          "port":  42050,
+                          "allInterfaces":  false,
+                          "process":  "OneDrive.Sync.Service"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  49664,
+                          "allInterfaces":  true,
+                          "process":  "lsass"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  49664,
+                          "allInterfaces":  true,
+                          "process":  "lsass"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  49665,
+                          "allInterfaces":  true,
+                          "process":  "wininit"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  49665,
+                          "allInterfaces":  true,
+                          "process":  "wininit"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  49666,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  49666,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  49667,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  49667,
+                          "allInterfaces":  true,
+                          "process":  "svchost"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  49668,
+                          "allInterfaces":  true,
+                          "process":  "spoolsv"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  49668,
+                          "allInterfaces":  true,
+                          "process":  "spoolsv"
+                      },
+                      {
+                          "address":  "::1",
+                          "port":  49669,
+                          "allInterfaces":  false,
+                          "process":  "jhi_service"
+                      },
+                      {
+                          "address":  "::",
+                          "port":  49670,
+                          "allInterfaces":  true,
+                          "process":  "services"
+                      },
+                      {
+                          "address":  "0.0.0.0",
+                          "port":  49670,
+                          "allInterfaces":  true,
+                          "process":  "services"
+                      },
+                      {
+                          "address":  "127.0.0.1",
+                          "port":  55159,
+                          "allInterfaces":  false,
+                          "process":  "node"
+                      },
+                      {
+                          "address":  "127.0.0.1",
+                          "port":  55160,
+                          "allInterfaces":  false,
+                          "process":  "node"
+                      },
+                      {
+                          "address":  "127.0.0.1",
+                          "port":  57043,
+                          "allInterfaces":  false,
+                          "process":  "agy"
+                      },
+                      {
+                          "address":  "127.0.0.1",
+                          "port":  57048,
+                          "allInterfaces":  false,
+                          "process":  "agy"
+                      },
+                      {
+                          "address":  "127.0.0.1",
+                          "port":  58140,
+                          "allInterfaces":  false,
+                          "process":  "Antigravity IDE"
+                      }
+                  ],
+    "startup":  [
+                    {
+                        "name":  "KakaoTalk",
+                        "executable":  "C:\\Program Files\\Kakao\\KakaoTalk\\KakaoTalk.exe",
+                        "hasArguments":  true,
+                        "location":  "HKU\\\u003c사용자 SID\u003e\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    },
+                    {
+                        "name":  "Discord",
+                        "executable":  "\u003c사용자 폴더\u003e\\AppData\\Local\\Discord\\Discord.exe",
+                        "hasArguments":  true,
+                        "location":  "HKU\\\u003c사용자 SID\u003e\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    },
+                    {
+                        "name":  "RobloxPlayerBeta",
+                        "executable":  "\u003c사용자 폴더\u003e\\AppData\\Local\\Roblox\\Versions\\version-7a0c6d10fcb34a2c\\RobloxPlayerBeta.exe",
+                        "hasArguments":  true,
+                        "location":  "HKU\\\u003c사용자 SID\u003e\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    },
+                    {
+                        "name":  "\u003c긴 값 가림\u003e",
+                        "executable":  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+                        "hasArguments":  true,
+                        "location":  "HKU\\\u003c사용자 SID\u003e\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    },
+                    {
+                        "name":  "SecurityHealth",
+                        "executable":  "%windir%\\system32\\SecurityHealthSystray.exe",
+                        "hasArguments":  false,
+                        "location":  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    },
+                    {
+                        "name":  "RtkAudUService",
+                        "executable":  "C:\\Windows\\System32\\DriverStore\\FileRepository\\realtekservice.inf_amd64_49e3c0efb244cb40\\RtkAudUService64.exe",
+                        "hasArguments":  true,
+                        "location":  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    },
+                    {
+                        "name":  "ALYac",
+                        "executable":  "C:\\Program Files\\ESTsoft\\ALYac\\AYLaunch.exe",
+                        "hasArguments":  true,
+                        "location":  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    },
+                    {
+                        "name":  "ALNotify",
+                        "executable":  "C:\\Program Files (x86)\\ESTsoft\\ALToolsManager\\alnotify.exe",
+                        "hasArguments":  false,
+                        "location":  "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+                    }
+                ],
+    "updates":  {
+                    "latest":  [
+                                   {
+                                       "id":  "KB5127648",
+                                       "kind":  "Security Update",
+                                       "installedOn":  "2026-10-14"
+                                   },
+                                   {
+                                       "id":  "KB5127647",
+                                       "kind":  "Security Update",
+                                       "installedOn":  "2026-10-14"
+                                   },
+                                   {
+                                       "id":  "KB5127690",
+                                       "kind":  "Update",
+                                       "installedOn":  "2026-10-14"
+                                   },
+                                   {
+                                       "id":  "KB5050575",
+                                       "kind":  "Update",
+                                       "installedOn":  "2026-08-07"
+                                   }
+                               ],
+                    "daysSinceLatest":  14.7
+                },
+    "events":  {
+                   "days":  3,
+                   "system":  [
+                                  {
+                                      "time":  "2026-10-28T08:44:35.8685368+09:00",
+                                      "id":  7009,
+                                      "source":  "Service Control Manager",
+                                      "level":  "오류",
+                                      "message":  "Intel(R) Platform License Manager Service 서비스 연결을 기다리는 동안 제한 시간에 도달했습니다(45000밀리초)."
+                                  },
+                                  {
+                                      "time":  "2026-10-27T18:43:02.2550119+09:00",
+                                      "id":  7009,
+                                      "source":  "Service Control Manager",
+                                      "level":  "오류",
+                                      "message":  "Intel(R) Platform License Manager Service 서비스 연결을 기다리는 동안 제한 시간에 도달했습니다(45000밀리초)."
+                                  },
+                                  {
+                                      "time":  "2026-10-27T08:44:23.2690399+09:00",
+                                      "id":  7009,
+                                      "source":  "Service Control Manager",
+                                      "level":  "오류",
+                                      "message":  "Intel(R) Platform License Manager Service 서비스 연결을 기다리는 동안 제한 시간에 도달했습니다(45000밀리초)."
+                                  },
+                                  {
+                                      "time":  "2026-10-26T08:46:51.1991243+09:00",
+                                      "id":  7009,
+                                      "source":  "Service Control Manager",
+                                      "level":  "오류",
+                                      "message":  "Intel(R) Platform License Manager Service 서비스 연결을 기다리는 동안 제한 시간에 도달했습니다(45000밀리초)."
+                                  }
+                              ],
+                   "application":  [
+                                       {
+                                           "time":  "2026-10-28T11:21:42.8706463+09:00",
+                                           "id":  1002,
+                                           "source":  "Application Hang",
+                                           "level":  "오류",
+                                           "message":  "프로그램 Notepad.exe 버전 11.2607.14.0이(가) Windows와의 상호 작용을 중지하고 닫혔습니다. 문제에 대한 추가 정보가 있는지 확인하려면 보안 및 유지 관리 제어판에서 문제 기록을 확인하세요."
+                                       },
+                                       {
+                                           "time":  "2026-10-27T21:38:17.1589810+09:00",
+                                           "id":  13,
+                                           "source":  "VSS",
+                                           "level":  "오류",
+                                           "message":  "볼륨 섀도 복사본 서비스 정보: COM 서버(CLSID: {4e14fba2-2e22-11d1-9964-00c04fbbb345}, 이름: CEventSystem)를 시작할 수 없습니다. [0x8007045b, 시스템을 종료하고 있습니다."
+                                       }
+                                   ]
+               },
+    "network":  {
+                    "adaptersUp":  [
+                                       {
+                                           "name":  "이더넷",
+                                           "description":  "Intel(R) Ethernet Connection (10) I219-V",
+                                           "linkSpeed":  "1 Gbps"
+                                       },
+                                       {
+                                           "name":  "VMware Network Adapter VMnet8",
+                                           "description":  "VMware Virtual Ethernet Adapter for VMnet8",
+                                           "linkSpeed":  "100 Mbps"
+                                       },
+                                       {
+                                           "name":  "VMware Network Adapter VMnet1",
+                                           "description":  "VMware Virtual Ethernet Adapter for VMnet1",
+                                           "linkSpeed":  "100 Mbps"
+                                       }
+                                   ],
+                    "dnsLookupOk":  true,
+                    "httpsReachable":  true
+                },
+    "keshevApp":  {
+                      "running":  false,
+                      "port":  5189,
+                      "note":  "케셰브 앱이 켜져 있지 않거나 「내 PC 상태」를 지원하지 않는 버전입니다."
+                  },
+    "limits":  {
+                   "listening":  {
+                                     "total":  31,
+                                     "shown":  31,
+                                     "truncated":  false
+                                 },
+                   "startup":  {
+                                   "total":  8,
+                                   "shown":  8,
+                                   "truncated":  false
+                               },
+                   "events-Application":  {
+                                              "shown":  2,
+                                              "max":  20,
+                                              "truncated":  false
+                                          },
+                   "events-System":  {
+                                         "shown":  4,
+                                         "max":  30,
+                                         "truncated":  false
+                                     }
+               }
+}

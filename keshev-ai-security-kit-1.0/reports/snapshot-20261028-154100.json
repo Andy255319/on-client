@@ -1,0 +1,90 @@
+{
+    "schema":  "keshev.ai-security-kit.snapshot.v1",
+    "kitVersion":  "1.0",
+    "collectedAt":  "2026-10-28T15:41:00.1242668+09:00",
+    "readOnly":  true,
+    "os":  {
+               "unavailable":  true,
+               "reason":  "클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다."
+           },
+    "cpu":  {
+                "unavailable":  true,
+                "reason":  "클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다."
+            },
+    "disks":  {
+                  "unavailable":  true,
+                  "reason":  "클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다."
+              },
+    "processes":  {
+                      "count":  2,
+                      "byCpu":  [
+                                    {
+                                        "name":  "powershell",
+                                        "cpuSeconds":  0.9,
+                                        "memoryMB":  121
+                                    },
+                                    {
+                                        "name":  "powershell",
+                                        "cpuSeconds":  0.4,
+                                        "memoryMB":  60.2
+                                    }
+                                ],
+                      "byMemory":  [
+                                       {
+                                           "name":  "powershell",
+                                           "memoryMB":  121
+                                       },
+                                       {
+                                           "name":  "powershell",
+                                           "memoryMB":  60.2
+                                       }
+                                   ]
+                  },
+    "defender":  {
+                     "unavailable":  true,
+                     "reason":  "\"1\"개의 인수가 있는 \"ProcessRecord\"을(를) 호출하는 동안 예외가 발생했습니다. \"클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다.\""
+                 },
+    "antivirusProducts":  {
+                              "unavailable":  true,
+                              "reason":  "클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다."
+                          },
+    "firewall":  {
+                     "unavailable":  true,
+                     "reason":  "\"1\"개의 인수가 있는 \"ProcessRecord\"을(를) 호출하는 동안 예외가 발생했습니다. \"클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다.\""
+                 },
+    "listening":  {
+                      "unavailable":  true,
+                      "reason":  "\"1\"개의 인수가 있는 \"ProcessRecord\"을(를) 호출하는 동안 예외가 발생했습니다. \"클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다.\""
+                  },
+    "startup":  {
+                    "unavailable":  true,
+                    "reason":  "클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다."
+                },
+    "updates":  {
+                    "unavailable":  true,
+                    "reason":  "액세스가 거부되었습니다.\r\n"
+                },
+    "events":  {
+                   "days":  3,
+                   "system":  {
+                                  "unavailable":  true,
+                                  "reason":  "권한이 없는 작업을 수행하려고 했습니다."
+                              },
+                   "application":  {
+                                       "unavailable":  true,
+                                       "reason":  "권한이 없는 작업을 수행하려고 했습니다."
+                                   }
+               },
+    "network":  {
+                    "unavailable":  true,
+                    "reason":  "\"1\"개의 인수가 있는 \"ProcessRecord\"을(를) 호출하는 동안 예외가 발생했습니다. \"클라이언트에서 CIM 리소스에 대한 액세스를 사용할 수 없습니다.\""
+                },
+    "keshevApp":  {
+                      "running":  false,
+                      "port":  5189,
+                      "note":  "케셰브 앱이 켜져 있지 않거나 「내 PC 상태」를 지원하지 않는 버전입니다."
+                  },
+    "limits":  {
+
+               }
+}
