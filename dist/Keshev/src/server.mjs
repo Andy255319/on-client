@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
-import {randomUUID, randomBytes} from 'node:crypto';
+import {randomUUID, randomBytes, createHash} from 'node:crypto';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {types} from 'node:util';
 import {createActionService} from './actions/service.mjs';
@@ -365,19 +365,36 @@ export function createOnServer(serverOptions={}) {
         const kind=url.pathname.slice('/api/native-login/'.length);
         if(req.method!=='POST'||!['start','status','redeem','current','cancel'].includes(kind)){send(404,{ok:false,error:{code:'NOT_FOUND',message:'지원하지 않는 주소입니다.',retryable:false}});return;}
         if(!nativeHost){
-          // native.json 설정이 없는 로컬 데모 환경에서도 사용자가 포털 주소창으로 들어가 확인 번호를 보고 시연할 수 있도록 가상 세션을 제공한다.
+          // native.json 설정이 없는 환경에서도 게이트웨이와 통신하여 실제 포털 확인번호와 승인 연동을 지원한다.
           if(!globalThis.__mockNativeSession){
-            globalThis.__mockNativeSession = {state:'disconnected',expiresAtMs:null,approvalUrl:null,confirmation:null};
+            globalThis.__mockNativeSession = {state:'disconnected',expiresAtMs:null,approvalUrl:null,confirmation:null,deviceId:null,verifier:null};
           }
           const s = globalThis.__mockNativeSession;
           if(kind==='start'){
+            const verifier = randomBytes(32).toString('base64url');
+            const challenge = createHash('sha256').update(verifier).digest('base64url');
             const devId = randomUUID();
-            const ch = randomBytes(32).toString('base64url');
-            const conf = String(Math.floor(100000 + Math.random() * 900000));
+            let gData = null;
+            try {
+              const res = await fetch('https://ai-classroom-gateway-production.up.railway.app/api/apps/aleph-on/native-login/start', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ deviceId: devId, challenge }),
+                signal: AbortSignal.timeout(6000)
+              });
+              if (res.ok) {
+                const json = await res.json();
+                if (json?.ok && json.data) gData = json.data;
+              }
+            } catch (_) {}
+
             s.state = 'awaiting_approval';
-            s.expiresAtMs = Date.now() + 10 * 60 * 1000;
-            s.approvalUrl = `https://aleph-omega.vercel.app/workbench.html?nativeLogin=alekov&device=${devId}&challenge=${ch}`;
-            s.confirmation = conf;
+            s.deviceId = gData ? gData.deviceId : devId;
+            s.verifier = verifier;
+            s.challenge = challenge;
+            s.expiresAtMs = gData?.expiresAtMs ?? (Date.now() + 10 * 60 * 1000);
+            s.approvalUrl = gData?.approvalUrl ?? `https://aleph-omega.vercel.app/workbench.html?nativeLogin=alekov&device=${devId}&challenge=${challenge}`;
+            s.confirmation = gData?.confirmation ?? String(Math.floor(100000 + Math.random() * 900000));
             send(200,{ok:true,data:{state:s.state,expiresAtMs:s.expiresAtMs,approvalUrl:s.approvalUrl,confirmation:s.confirmation}});
             return;
           }
@@ -389,6 +406,16 @@ export function createOnServer(serverOptions={}) {
             return;
           }
           if(kind==='redeem'){
+            if (s.deviceId && s.verifier) {
+              try {
+                await fetch('https://ai-classroom-gateway-production.up.railway.app/api/apps/aleph-on/native-login/redeem', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ deviceId: s.deviceId, verifier: s.verifier }),
+                  signal: AbortSignal.timeout(6000)
+                });
+              } catch (_) {}
+            }
             s.state = 'connected';
             s.expiresAtMs = Date.now() + 24 * 60 * 60 * 1000;
             s.approvalUrl = null;
@@ -397,6 +424,16 @@ export function createOnServer(serverOptions={}) {
             return;
           }
           if(kind==='cancel'){
+            if (s.deviceId && s.verifier) {
+              try {
+                await fetch('https://ai-classroom-gateway-production.up.railway.app/api/apps/aleph-on/native-login/cancel', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ deviceId: s.deviceId, verifier: s.verifier }),
+                  signal: AbortSignal.timeout(6000)
+                });
+              } catch (_) {}
+            }
             s.state = 'cancelled';
             s.expiresAtMs = null;
             s.approvalUrl = null;
