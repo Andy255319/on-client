@@ -189,11 +189,15 @@ export function createStudentView() {
 
       dashboardSection.appendChild(cardGrid);
 
-      // --- [3일차/4일차] 내 PC 네트워크 구성 · 방화벽 · Windows 기록 실측 세부 박스 ---
+      // --- [3일차/4일차/최종] 내 PC 네트워크 구성 · 방화벽 · Windows 기록 실측 세부 박스 ---
       const detailSecurityBox = document.createElement('div');
       detailSecurityBox.className = 'card security-detail-box';
 
-      // 헤더: 제목 + [실측] 배지 + [다시 조회] 버튼 (키보드 접근성 탑재)
+      // 이전 실측 스냅샷 상태 (Delta 변동 추이 계산용)
+      let prevSecuritySnapshot = null;
+      let lastReportText = '';
+
+      // 헤더: 제목 + [실측] 배지 + 버튼 그룹([리포트 복사], [다시 조회])
       const secHeader = document.createElement('div');
       secHeader.className = 'sec-detail-header';
 
@@ -209,7 +213,21 @@ export function createStudentView() {
       secTitleWrapper.appendChild(secTag);
       secHeader.appendChild(secTitleWrapper);
 
-      // 다시 조회 버튼 (키보드 지원)
+      // 버튼 그룹 컨테이너
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'sec-btn-group';
+
+      // 1) 리포트 복사 버튼 (키보드 지원)
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.id = 'btn-copy-security';
+      copyBtn.className = 'btn btn-copy-sec';
+      copyBtn.setAttribute('tabindex', '0');
+      copyBtn.setAttribute('aria-label', '로컬 PC 실측 결과 클립보드 복사');
+      copyBtn.textContent = '📋 리포트 복사';
+      btnGroup.appendChild(copyBtn);
+
+      // 2) 다시 조회 버튼 (키보드 지원)
       const refreshBtn = document.createElement('button');
       refreshBtn.type = 'button';
       refreshBtn.id = 'btn-refresh-security';
@@ -217,7 +235,9 @@ export function createStudentView() {
       refreshBtn.setAttribute('tabindex', '0');
       refreshBtn.setAttribute('aria-label', '내 PC 보안 및 네트워크 상태 다시 조회');
       refreshBtn.textContent = '다시 조회';
-      secHeader.appendChild(refreshBtn);
+      btnGroup.appendChild(refreshBtn);
+
+      secHeader.appendChild(btnGroup);
       detailSecurityBox.appendChild(secHeader);
 
       // 대기 표시 (로딩 인디케이터)
@@ -261,6 +281,10 @@ export function createStudentView() {
           <span class="sec-label">최근 24시간 Windows 기록:</span>
           <span class="sec-val" id="sec-evt-val">집계 중…</span>
         </div>
+        <div class="sec-item" id="sec-delta-item">
+          <span class="sec-label">직전 대비 변동 추이:</span>
+          <span class="sec-val" id="sec-delta-val"><span class="badge-delta badge-delta-init">기준값 측정 대기 중…</span></span>
+        </div>
         <div class="sec-item" id="sec-sdp-item">
           <span class="sec-label">SDP 서버 실제 연결:</span>
           <span class="sec-val val-sdp-badge"><span class="tag tag-sdp">SDP 미연결</span> (PC 로컬 실측 성공 데이터와 독립적으로 분리됨)</span>
@@ -284,21 +308,57 @@ export function createStudentView() {
           })
           .then(json => {
             const sec = json?.data?.security;
+            const sys = json?.data?.system;
             const valEl = c3.querySelector('#student-real-security');
             const subEl = c3.querySelector('#student-real-security-sub');
             const netValEl = detailSecurityBox.querySelector('#sec-net-val');
             const fwValEl = detailSecurityBox.querySelector('#sec-fw-val');
             const evtValEl = detailSecurityBox.querySelector('#sec-evt-val');
+            const deltaValEl = detailSecurityBox.querySelector('#sec-delta-val');
 
             if (sec) {
+              // 1. 네트워크 구성 (인터페이스 아코디언/토글 지원)
               if (netValEl) {
-                if (sec.network?.interfaces?.length) {
-                  netValEl.textContent = sec.network.interfaces.map(i => `${i.interface}: ${i.address}`).join(' / ');
-                } else {
+                const ifaces = sec.network?.interfaces || [];
+                if (ifaces.length === 0) {
                   netValEl.textContent = '확인 불가 (활성 IPv4 네트워크 없음)';
+                } else if (ifaces.length === 1) {
+                  netValEl.textContent = `${ifaces[0].interface}: ${ifaces[0].address} (넷마스크: ${ifaces[0].netmask || '255.255.255.0'})`;
+                } else {
+                  netValEl.innerHTML = '';
+                  const mainText = document.createElement('span');
+                  mainText.textContent = `${ifaces[0].interface}: ${ifaces[0].address}`;
+                  netValEl.appendChild(mainText);
+
+                  const toggleBtn = document.createElement('button');
+                  toggleBtn.type = 'button';
+                  toggleBtn.className = 'btn-net-toggle';
+                  toggleBtn.setAttribute('aria-expanded', 'false');
+                  toggleBtn.textContent = `[+${ifaces.length - 1}개 어댑터 보기]`;
+
+                  const extraBox = document.createElement('div');
+                  extraBox.className = 'net-extra-box';
+                  extraBox.style.display = 'none';
+                  extraBox.innerHTML = ifaces.slice(1).map(i => `• ${i.interface}: ${i.address} (${i.netmask || '255.255.255.0'})`).join('<br>');
+
+                  toggleBtn.addEventListener('click', () => {
+                    const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+                    toggleBtn.setAttribute('aria-expanded', String(!expanded));
+                    if (expanded) {
+                      extraBox.style.display = 'none';
+                      toggleBtn.textContent = `[+${ifaces.length - 1}개 어댑터 보기]`;
+                    } else {
+                      extraBox.style.display = 'block';
+                      toggleBtn.textContent = `[- 접기]`;
+                    }
+                  });
+
+                  netValEl.appendChild(toggleBtn);
+                  netValEl.appendChild(extraBox);
                 }
               }
 
+              // 2. 방화벽 설정 (읽기 전용)
               if (fwValEl) {
                 if (sec.firewall?.status === 'ok') {
                   fwValEl.textContent = `도메인: ${sec.firewall.domain} · 개인: ${sec.firewall.private} · 공용: ${sec.firewall.public} (읽기 전용)`;
@@ -307,17 +367,71 @@ export function createStudentView() {
                 }
               }
 
+              // 3. 최근 24시간 Windows 이벤트 로그
+              const currentSysEvt = sec.windowsEvents?.systemWarnErrCount ?? 0;
+              const currentAppEvt = sec.windowsEvents?.appWarnErrCount ?? 0;
               if (evtValEl) {
                 if (sec.windowsEvents?.status === 'ok') {
-                  evtValEl.textContent = `System 경고·오류: ${sec.windowsEvents.systemWarnErrCount}건 · Application 경고·오류: ${sec.windowsEvents.appWarnErrCount}건`;
+                  evtValEl.textContent = `System 경고·오류: ${currentSysEvt}건 · Application 경고·오류: ${currentAppEvt}건`;
                 } else {
                   evtValEl.textContent = sec.windowsEvents?.reason || '확인 불가 (이벤트 로그 접근 제한)';
                 }
               }
 
+              // 4. 직전 대비 변동 추이 (Delta 뱃지)
+              if (deltaValEl) {
+                const currentMemPct = sys?.memoryUsagePercent ?? 0;
+                if (!prevSecuritySnapshot) {
+                  deltaValEl.innerHTML = `<span class="badge-delta badge-delta-init">기준값 측정 완료 (${new Date().toLocaleTimeString('ko-KR')})</span> <span class="delta-sub">다음 조회 시 변동량 집계</span>`;
+                } else {
+                  const sysDiff = currentSysEvt - prevSecuritySnapshot.sysEvt;
+                  const appDiff = currentAppEvt - prevSecuritySnapshot.appEvt;
+                  const memDiff = Number((currentMemPct - prevSecuritySnapshot.memPct).toFixed(1));
+
+                  const sysBadge = sysDiff === 0
+                    ? `<span class="badge-delta badge-delta-zero">System: ±0건</span>`
+                    : sysDiff > 0
+                      ? `<span class="badge-delta badge-delta-up">System: +${sysDiff}건</span>`
+                      : `<span class="badge-delta badge-delta-down">System: ${sysDiff}건</span>`;
+
+                  const appBadge = appDiff === 0
+                    ? `<span class="badge-delta badge-delta-zero">App: ±0건</span>`
+                    : appDiff > 0
+                      ? `<span class="badge-delta badge-delta-up">App: +${appDiff}건</span>`
+                      : `<span class="badge-delta badge-delta-down">App: ${appDiff}건</span>`;
+
+                  const memSign = memDiff > 0 ? `+${memDiff}` : `${memDiff}`;
+                  const memBadge = `<span class="badge-delta badge-delta-mem">RAM: ${memSign}%p</span>`;
+
+                  deltaValEl.innerHTML = `${sysBadge} ${appBadge} ${memBadge} <span class="delta-sub">(${prevSecuritySnapshot.time} 대비)</span>`;
+                }
+              }
+
+              // 현재 상태 스냅샷 저장
+              prevSecuritySnapshot = {
+                sysEvt: currentSysEvt,
+                appEvt: currentAppEvt,
+                memPct: sys?.memoryUsagePercent ?? 0,
+                time: new Date().toLocaleTimeString('ko-KR')
+              };
+
+              // 5. 상단 관제 3번째 카드 요약 갱신
               const measuredTime = sec.network?.measuredAt ? new Date(sec.network.measuredAt).toLocaleTimeString('ko-KR') : '시간 미확인';
               if (valEl) valEl.textContent = `방화벽: 보호됨 · IP: ${sec.network?.interfaces?.[0]?.address || '미확인'}`;
-              if (subEl) subEl.textContent = `잰 시각: ${measuredTime} (이벤트 경고·오류: ${sec.windowsEvents?.systemWarnErrCount ?? 0}건)`;
+              if (subEl) subEl.textContent = `잰 시각: ${measuredTime} (이벤트 경고·오류: ${currentSysEvt}건)`;
+
+              // 6. 리포트 복사용 텍스트 생성
+              const memStr = sys ? `${sys.memoryUsagePercent}% (총 ${(sys.totalMemoryBytes / (1024**3)).toFixed(1)} GB 중 ${(sys.usedMemoryBytes / (1024**3)).toFixed(1)} GB 사용)` : '확인 불가';
+              const netStr = sec.network?.interfaces?.map(i => `${i.interface}: ${i.address}`).join(' / ') || '확인 불가';
+              lastReportText = `[케셰브 로컬 PC 보안 & 네트워크 실측 리포트]\r\n` +
+                `• 측정 시각: ${new Date().toLocaleString('ko-KR')}\r\n` +
+                `• IPv4 네트워크: ${netStr}\r\n` +
+                `• 방화벽 상태: 도메인: ${sec.firewall?.domain || '확인 불가'} · 개인: ${sec.firewall?.private || '확인 불가'} · 공용: ${sec.firewall?.public || '확인 불가'} (읽기 전용)\r\n` +
+                `• 최근 24시간 이벤트: System 경고·오류 ${currentSysEvt}건 · Application 경고·오류 ${currentAppEvt}건 (정상 동작 기록, 침해 아님)\r\n` +
+                `• 메모리 실측: ${memStr}\r\n` +
+                `• SDP 서버 연동: SDP 미연결 (모의 예제 모드 분리)\r\n` +
+                `* 측정 원칙: 일반 사용자 권한 실측 (비파괴 읽기 전용 점검)\r\n` +
+                `* 필수 고지: 위 이벤트 기록 건수는 정상적인 Windows 시스템 동작 기록이며, 침해나 공격 탐지 결과가 아닙니다.`;
             } else {
               throw new Error('응답 데이터 형식 미확인');
             }
@@ -347,6 +461,34 @@ export function createStudentView() {
             refreshBtn.textContent = '다시 조회';
           });
       }
+
+      // 복사 버튼 이벤트 리스너
+      copyBtn.addEventListener('click', () => {
+        if (!lastReportText) {
+          copyBtn.textContent = '조회 대기 중';
+          setTimeout(() => { copyBtn.textContent = '📋 리포트 복사'; }, 1500);
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(lastReportText).then(() => {
+            copyBtn.textContent = '✓ 복사 완료!';
+            setTimeout(() => { copyBtn.textContent = '📋 리포트 복사'; }, 2000);
+          }).catch(() => {
+            copyBtn.textContent = '복사 실패';
+            setTimeout(() => { copyBtn.textContent = '📋 리포트 복사'; }, 1500);
+          });
+        } else {
+          // 클립보드 API 미지원 브라우저 폴백
+          const ta = document.createElement('textarea');
+          ta.value = lastReportText;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          copyBtn.textContent = '✓ 복사 완료!';
+          setTimeout(() => { copyBtn.textContent = '📋 리포트 복사'; }, 2000);
+        }
+      });
 
       // 버튼 클릭 및 키보드(Enter, Space) 이벤트 등록
       refreshBtn.addEventListener('click', querySecurityStatus);

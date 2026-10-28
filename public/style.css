@@ -436,4 +436,96 @@ main:focus { outline: none; }
   margin: 4px 0;
 }
 
+/* [핵심 기능 3종] 버튼 그룹, 리포트 복사, 변동 추이(Delta) 뱃지, 네트워크 토글 */
+.sec-btn-group {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
 
+.btn-copy-sec {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0369a1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-copy-sec:hover {
+  background: #0369a1;
+}
+.btn-copy-sec:focus-visible {
+  outline: 3px solid #0284c7 !important;
+  outline-offset: 2px !important;
+}
+
+.btn-net-toggle {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-net-toggle:hover {
+  background: #e2e8f0;
+}
+
+.net-extra-box {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* 변동 추이(Delta) 뱃지 */
+.badge-delta {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 4px;
+  margin-right: 4px;
+  letter-spacing: -0.2px;
+}
+.badge-delta-init {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+.badge-delta-zero {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+.badge-delta-up {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+.badge-delta-down {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+.badge-delta-mem {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+.delta-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-left: 4px;
+}
