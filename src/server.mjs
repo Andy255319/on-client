@@ -463,26 +463,50 @@ export function createOnServer(serverOptions={}) {
           if(!globalThis.__mockAiConnection) globalThis.__mockAiConnection = new Map();
           if(kind==='start'){
             const connId = randomUUID();
-            const ch = randomBytes(32).toString('base64url');
-            const conf = String(Math.floor(100000 + Math.random() * 900000));
-            const exp = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-            const appUrl = `https://aleph-omega.vercel.app/workbench.html?appConnect=alekov&appDevice=${connId}&appChallenge=${ch}`;
-            globalThis.__mockAiConnection.set(connId, {connectionId:connId, state:'awaiting_approval', expiresAt:exp, approvalUrl:appUrl, confirmation:conf});
-            send(200, {ok:true, data:{connectionId:connId, state:'awaiting_approval', expiresAt:exp, approvalUrl:appUrl, confirmation:conf}});
+            const verifier = randomBytes(32).toString('base64url');
+            const ch = createHash('sha256').update(verifier).digest('base64url');
+            const context = {
+              subjectId: 'student-demo',
+              alephUserId: 'user-demo',
+              siteId: 'site-demo',
+              identityVersion: 1,
+              projectId: 'aleph-on'
+            };
+            const sha = createHash('sha256').update(JSON.stringify({context, schema:'alekov.app-connect.context.v1'})).digest('hex');
+            let gData = null;
+            try {
+              const res = await fetch('https://ai-classroom-gateway-production.up.railway.app/api/apps/aleph-on/connect/start', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ deviceId: connId, challenge: ch, contextDigest: sha }),
+                signal: AbortSignal.timeout(6000)
+              });
+              if (res.ok) {
+                const json = await res.json();
+                if (json?.deviceId) gData = json;
+              }
+            } catch (_) {}
+
+            const finalDevId = gData?.deviceId ?? connId;
+            const conf = `${finalDevId.slice(0, 4)}-${finalDevId.slice(-4)}`;
+            const exp = gData?.expiresAt ?? new Date(Date.now() + 10 * 60 * 1000).toISOString();
+            const appUrl = gData?.approvalUrl ?? `https://aleph-omega.vercel.app/workbench.html?appConnect=alekov&appDevice=${finalDevId}&appChallenge=${ch}`;
+            globalThis.__mockAiConnection.set(finalDevId, {connectionId:finalDevId, state:'awaiting_approval', expiresAt:exp, approvalUrl:appUrl, confirmation:conf, verifier});
+            send(200, {ok:true, data:{connectionId:finalDevId, approvalUrl:appUrl, confirmation:conf, expiresAt:exp, state:'awaiting_approval'}});
             return;
           }
           if(kind==='status'||kind==='finish'){
             const item = globalThis.__mockAiConnection.get(input.connectionId);
             if(item){
               if(kind==='finish') item.state = 'connected';
-              send(200, {ok:true, data:{connectionId:item.connectionId, state:item.state, expiresAt:item.expiresAt, approvalUrl:item.state==='connected'?null:item.approvalUrl, confirmation:item.state==='connected'?null:item.confirmation}});
+              send(200, {ok:true, data:{connectionId:item.connectionId, state:item.state, expiresAt:item.expiresAt, reason:null}});
               return;
             }
           }
           if(kind==='cancel'){
             const item = globalThis.__mockAiConnection.get(input.connectionId);
             if(item) item.state = 'cancelled';
-            send(200, {ok:true, data:{connectionId:input.connectionId, state:'cancelled', expiresAt:null, approvalUrl:null, confirmation:null}});
+            send(200, {ok:true, data:{connectionId:input.connectionId, state:'cancelled', expiresAt:null, reason:null}});
             return;
           }
         }
